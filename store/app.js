@@ -106,6 +106,10 @@ async function init() {
         await saveProductsToDB(products);
     }
 
+    // Sanitize cart (ensure IDs only)
+    cart = cart.map(item => typeof item === 'object' ? String(item.id) : String(item));
+    saveCart();
+
     renderProducts();
     renderCart();
     setupEventListeners();
@@ -190,7 +194,7 @@ function renderProducts() {
                 <p class="product-desc">${p.description || ''}</p>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal(${p.id})">BUY NOW</button>
-                    ${cart.some(item => String(item.id) === String(p.id)) 
+                    ${cart.includes(String(p.id)) 
                         ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
                         : `<button class="btn btn-cart" onclick="addToCart(${p.id})">ADD TO BAG</button>`
                     }
@@ -264,10 +268,9 @@ function addToCart(id) {
     if (!p) return;
 
     // Check if ALREADY in cart FIRST
-    const existing = cart.find(item => String(item.id) === String(id));
-    if (existing) {
+    if (cart.includes(String(id))) {
         showNotification(`${p.name} is already in your bag.`);
-        renderProducts(); // Reset any accidental state
+        renderProducts(); 
         return;
     }
 
@@ -280,8 +283,8 @@ function addToCart(id) {
         targetBtn.disabled = true;
     }
 
-    // 2. Add to cart & Update TOP icon immediately
-    cart.push(p);
+    // 2. Add ID to cart & Update TOP icon immediately
+    cart.push(String(id));
     saveCart();
     renderCart(); // Updates top number instantly
 
@@ -295,10 +298,10 @@ function addToCart(id) {
 }
 
 function removeFromCart(id) {
-    cart = cart.filter(item => item.id !== id);
+    cart = cart.filter(itemId => String(itemId) !== String(id));
     saveCart();
     renderCart();
-    renderProducts(); // Update button states
+    renderProducts();
 }
 
 function saveCart() {
@@ -324,7 +327,9 @@ function renderCart() {
     }
 
     let total = 0;
-    cartItems.innerHTML = cart.map(item => {
+    cartItems.innerHTML = cart.map(itemId => {
+        const item = products.find(p => String(p.id) === String(itemId));
+        if (!item) return ''; // Should not happen
         total += item.price;
         return `
             <div class="cart-item">
