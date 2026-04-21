@@ -245,9 +245,24 @@ function togglePics(id) {
 
 function addToCart(id) {
     const p = products.find(prod => prod.id === id);
+    if (!p) return;
+
+    // Visual feedback on the button itself
+    const btn = event?.target;
+    const originalText = btn ? btn.textContent : 'ADD TO BAG';
+    if (btn && btn.classList.contains('btn-cart')) {
+        btn.textContent = 'ADDING...';
+        btn.style.background = 'var(--gold-dark)';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+        }, 600);
+    }
+
     const existing = cart.find(item => item.id === id);
     
     if (existing) {
+        renderCart(); // Still trigger the bump to show it was clicked
         showNotification(`${p.name} is already in your bag.`);
         return;
     }
@@ -269,7 +284,16 @@ function saveCart() {
 }
 
 function renderCart() {
-    document.querySelectorAll('.cart-count').forEach(el => el.textContent = cart.length);
+    const counts = document.querySelectorAll('.cart-count');
+    counts.forEach(el => el.textContent = cart.length);
+    
+    // Add bump effect
+    const icon = document.getElementById('cartOpen');
+    if (icon) {
+        icon.classList.remove('bump');
+        void icon.offsetWidth; // Force reflow
+        icon.classList.add('bump');
+    }
     
     if (cart.length === 0) {
         cartItems.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--text-gray);">Your bag is empty.</p>`;
@@ -473,8 +497,19 @@ function setupEventListeners() {
             const videoFile = document.getElementById('pVideoFile').files[0];
             const imageFiles = Array.from(document.getElementById('pImagesFile').files);
 
+            // Calculate total size in MB
+            let totalBytes = videoFile.size;
+            imageFiles.forEach(f => totalBytes += f.size);
+            const totalMB = totalBytes / (1024 * 1024);
+
+            if (totalMB > 20) {
+                showNotification(`Files too large (${totalMB.toFixed(1)}MB)! Max limit is 20MB.`);
+                uploadBtn.textContent = originalText;
+                uploadBtn.disabled = false;
+                return;
+            }
+
             // Read video and images as DataURLs
-            // DataURLs can be large, but IndexedDB handles them better than LocalStorage
             const videoDataUrl = await readFile(videoFile);
             const imagesDataUrls = await Promise.all(imageFiles.map(file => readFile(file)));
 
