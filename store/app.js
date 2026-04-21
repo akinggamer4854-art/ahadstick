@@ -190,7 +190,7 @@ function renderProducts() {
                 <p class="product-desc">${p.description || ''}</p>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal(${p.id})">BUY NOW</button>
-                    ${cart.some(item => item.id == p.id) 
+                    ${cart.some(item => String(item.id) === String(p.id)) 
                         ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
                         : `<button class="btn btn-cart" onclick="addToCart(${p.id})">ADD TO BAG</button>`
                     }
@@ -260,11 +260,11 @@ function togglePics(id) {
 }
 
 function addToCart(id) {
-    const p = products.find(prod => prod.id == id);
+    const p = products.find(prod => String(prod.id) === String(id));
     if (!p) return;
 
     // Check if ALREADY in cart FIRST
-    const existing = cart.find(item => item.id == id);
+    const existing = cart.find(item => String(item.id) === String(id));
     if (existing) {
         showNotification(`${p.name} is already in your bag.`);
         renderProducts(); // Reset any accidental state
