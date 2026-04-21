@@ -260,29 +260,35 @@ function togglePics(id) {
 }
 
 function addToCart(id) {
-    const p = products.find(prod => prod.id == id); // Use == for robust matching
+    const p = products.find(prod => prod.id == id);
     if (!p) return;
 
-    // Visual feedback on the button itself
+    // 1. Visual feedback on the button immediately
     const btn = event?.target;
     if (btn && btn.classList.contains('btn-cart')) {
         btn.textContent = 'ADDING...';
         btn.style.background = 'var(--gold-dark)';
+        btn.disabled = true;
     }
 
     const existing = cart.find(item => item.id == id);
-    
     if (existing) {
-        renderProducts(); // Refresh buttons
         showNotification(`${p.name} is already in your bag.`);
         return;
     }
 
+    // 2. Add to cart & Update TOP icon immediately
     cart.push(p);
     saveCart();
-    renderCart();
-    renderProducts(); // Update button labels to 'IN BAG'
+    renderCart(); // Updates top number instantly
+
+    // 3. Show notification
     showNotification(`${p.name} added to your bag.`);
+
+    // 4. Wait 2 seconds, then show "IN BAG" on the button
+    setTimeout(() => {
+        renderProducts(); 
+    }, 2000);
 }
 
 function removeFromCart(id) {
