@@ -144,7 +144,13 @@ function checkAdminAccess() {
     };
 }
 
-function renderProducts() {
+let displayedCount = 20;
+let isRendering = false;
+
+function renderProducts(append = false) {
+    if (isRendering && !append) return;
+    isRendering = true;
+
     const sortedProducts = [...products].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
@@ -155,30 +161,43 @@ function renderProducts() {
     
     if (filtered.length === 0) {
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
+        isRendering = false;
         return;
     }
 
-    productFeed.innerHTML = filtered.map(p => `
-        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up">
+    const batch = filtered.slice(append ? displayedCount - 20 : 0, displayedCount);
+    const html = batch.map(p => {
+        const slides = [p.video, ...p.images];
+        return `
+        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
             ${(p.pinned && isAdminLoggedIn) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
             
-            <div class="product-video-container">
-                <video class="product-video" autoplay loop muted playsinline>
-                    <source src="${p.video}" type="video/mp4">
-                </video>
+            <div class="carousel-container">
+                <!-- Slide 0: Video -->
+                <div class="media-slide active" data-index="0">
+                    <video class="product-video" loop muted playsinline>
+                        <source src="${p.video}" type="video/mp4">
+                    </video>
+                </div>
+                
+                <!-- Other Slides: Images -->
+                ${p.images.map((img, idx) => `
+                    <div class="media-slide" data-index="${idx + 1}">
+                        <img src="${img}" class="product-img" loading="lazy">
+                    </div>
+                `).join('')}
+
                 <div class="video-overlay"></div>
             </div>
-            
-            <div class="product-images">
-                ${p.images.map(img => `<img src="${img}" class="product-img" loading="lazy">`).join('')}
+
+            <!-- Carousel Navigation -->
+            <div class="carousel-nav">
+                <button class="nav-arr prev" onclick="changeSlide(${p.id}, -1)">❮</button>
+                <button class="nav-arr next" onclick="changeSlide(${p.id}, 1)">❯</button>
             </div>
 
-            <button class="view-pics-btn" onclick="togglePics(${p.id})">
-                <span class="icon">🖼️</span>
-            </button>
-
             ${isAdminLoggedIn ? `
-                <div class="admin-controls">
+                <div class="admin-controls" style="z-index: 40;">
                     <button class="control-btn pin-btn" onclick="togglePin(${p.id})" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
                         ${p.pinned ? '📍' : '📌'}
                     </button>
@@ -191,7 +210,10 @@ function renderProducts() {
             <div class="product-info">
                 <h2 class="product-name">${p.name}</h2>
                 <p class="product-price">₹${p.price.toLocaleString()}</p>
-                <p class="product-desc">${p.description || ''}</p>
+                <div class="desc-wrapper">
+                    <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
+                    ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc(${p.id})">more...</button>` : ''}
+                </div>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal(${p.id})">BUY NOW</button>
                     ${cart.includes(String(p.id)) 
@@ -201,9 +223,44 @@ function renderProducts() {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
+
+    if (append) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        while (tempDiv.firstChild) {
+            productFeed.appendChild(tempDiv.firstChild);
+        }
+    } else {
+        productFeed.innerHTML = html;
+    }
+
+    // Add sentinel if more items exist
+    if (displayedCount < filtered.length) {
+        setupSentinel();
+    }
     
     setupScrollReveal();
+    isRendering = false;
+}
+
+function setupSentinel() {
+    const existing = document.getElementById('sentinel');
+    if (existing) existing.remove();
+
+    const sentinel = document.createElement('div');
+    sentinel.id = 'sentinel';
+    sentinel.style.height = '100px';
+    sentinel.style.width = '100%';
+    productFeed.appendChild(sentinel);
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isRendering) {
+            displayedCount += 20;
+            renderProducts(true);
+        }
+    });
+    observer.observe(sentinel);
 }
 
 async function togglePin(id) {
@@ -256,11 +313,33 @@ function setupScrollReveal() {
     });
 }
 
-function togglePics(id) {
+function toggleDesc(id) {
+    const desc = document.getElementById(`desc-${id}`);
+    const btn = document.getElementById(`btn-${id}`);
+    desc.classList.toggle('expanded');
+    btn.textContent = desc.classList.contains('expanded') ? 'less' : 'more...';
+}
+
+function changeSlide(id, dir) {
     const el = document.getElementById(`p-${id}`);
-    const btn = el.querySelector('.view-pics-btn .icon');
-    el.classList.toggle('show-pics');
-    btn.textContent = el.classList.contains('show-pics') ? '📹' : '🖼️';
+    const slides = el.querySelectorAll('.media-slide');
+    let currentIndex = parseInt(el.getAttribute('data-slide'));
+    
+    // Deactivate current
+    slides[currentIndex].classList.remove('active');
+    const oldVideo = slides[currentIndex].querySelector('video');
+    if (oldVideo) oldVideo.pause();
+
+    // Calculate next
+    currentIndex = (currentIndex + dir + slides.length) % slides.length;
+    el.setAttribute('data-slide', currentIndex);
+
+    // Activate next
+    slides[currentIndex].classList.add('active');
+    const newVideo = slides[currentIndex].querySelector('video');
+    if (newVideo) {
+        newVideo.play().catch(() => {});
+    }
 }
 
 function addToCart(id) {
@@ -394,6 +473,7 @@ function setupEventListeners() {
             if (active) active.classList.remove('active');
             e.target.classList.add('active');
             currentCategory = e.target.getAttribute('data-cat');
+            displayedCount = 20; // Reset for infinite scroll
             renderProducts();
         });
     });
@@ -456,13 +536,21 @@ function setupEventListeners() {
 
         if (orderType === 'bag') {
             orderTitle = 'NEW BULK ORDER';
-            const itemDetails = cart.map((item, index) => `${index + 1}. ${item.name} (₹${item.price.toLocaleString()})`).join('\n');
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const itemDetails = cart.map((itemId, index) => {
+                const item = products.find(p => String(p.id) === String(itemId));
+                return item ? `${index + 1}. ${item.name} (₹${item.price.toLocaleString()})` : '';
+            }).join('\n');
+            
+            const total = cart.reduce((sum, itemId) => {
+                const item = products.find(p => String(p.id) === String(itemId));
+                return sum + (item ? item.price : 0);
+            }, 0);
+            
             productSection = `*ITEMS IN BAG:*\n${itemDetails}\n\n*TOTAL VALUE:* ₹${total.toLocaleString()}`;
         } else {
             orderTitle = 'NEW SINGLE ORDER';
-            const p = products.find(prod => prod.id == pid);
-            productSection = `*PRODUCT DETAILS:*\n📦 Name: ${p.name}\n💰 Price: ₹${p.price.toLocaleString()}`;
+            const p = products.find(prod => String(prod.id) === String(pid));
+            productSection = p ? `*PRODUCT DETAILS:*\n📦 Name: ${p.name}\n💰 Price: ₹${p.price.toLocaleString()}` : '*Error: Product Not Found*';
         }
 
         const details = {
@@ -517,28 +605,42 @@ function setupEventListeners() {
         
         const uploadBtn = document.getElementById('uploadBtn');
         const originalText = uploadBtn.textContent;
-        uploadBtn.textContent = 'Storing Masterpiece (Large File)...';
+        uploadBtn.textContent = 'Processing Masterpiece...';
         uploadBtn.disabled = true;
 
         try {
             const videoFile = document.getElementById('pVideoFile').files[0];
-            const imageFiles = Array.from(document.getElementById('pImagesFile').files);
+            const videoPathInput = document.getElementById('pVideoPath').value.trim();
+            
+            // Collect images from the 5 slots
+            const imageSlots = Array.from(document.querySelectorAll('.p-img-slot'));
+            const imageFiles = imageSlots.map(slot => slot.files[0]).filter(f => f !== undefined);
+            
+            const imagePathsInput = document.getElementById('pImagesPath').value.trim();
 
-            // Calculate total size in MB
-            let totalBytes = videoFile.size;
-            imageFiles.forEach(f => totalBytes += f.size);
-            const totalMB = totalBytes / (1024 * 1024);
+            let videoData = null;
+            let imagesData = [];
 
-            if (totalMB > 20) {
-                showNotification(`Files too large (${totalMB.toFixed(1)}MB)! Max limit is 20MB.`);
-                uploadBtn.textContent = originalText;
-                uploadBtn.disabled = false;
-                return;
+            // Handle Video (Upload or Path)
+            if (videoPathInput) {
+                videoData = videoPathInput; 
+            } else if (videoFile) {
+                if (videoFile.size > 20 * 1024 * 1024) throw new Error('QUOTA_LIMIT');
+                videoData = await readFile(videoFile);
+            } else {
+                throw new Error('MISSING_VIDEO');
             }
 
-            // Read video and images as DataURLs
-            const videoDataUrl = await readFile(videoFile);
-            const imagesDataUrls = await Promise.all(imageFiles.map(file => readFile(file)));
+            // Handle Gallery Images (Upload Slots or Manual Paths)
+            if (imagePathsInput) {
+                imagesData = imagePathsInput.split(',').map(s => s.trim());
+            } else if (imageFiles.length > 0) {
+                let totalImgSize = imageFiles.reduce((sum, f) => sum + f.size, 0);
+                if (totalImgSize > 20 * 1024 * 1024) throw new Error('QUOTA_LIMIT');
+                imagesData = await Promise.all(imageFiles.map(file => readFile(file)));
+            } else {
+                throw new Error('MISSING_IMAGES');
+            }
 
             const newProd = {
                 id: Date.now(),
@@ -546,8 +648,8 @@ function setupEventListeners() {
                 price: Number(document.getElementById('pPrice').value),
                 description: document.getElementById('pDesc').value,
                 category: document.getElementById('pCat').value,
-                video: videoDataUrl,
-                images: imagesDataUrls,
+                video: videoData,
+                images: imagesData,
                 pinned: false
             };
 
@@ -557,10 +659,18 @@ function setupEventListeners() {
             
             adminModal.style.display = "none";
             productForm.reset();
-            showNotification('Masterpiece saved to your browser database.');
+            showNotification('Masterpiece saved to your catalog.');
         } catch (err) {
             console.error(err);
-            showNotification('Critical Error: Browser storage full or failed.');
+            if (err.message === 'QUOTA_LIMIT') {
+                showNotification('Upload limit 20MB! For larger files, use the "Paste Path" option.');
+            } else if (err.message === 'MISSING_VIDEO') {
+                showNotification('Please upload a video or paste a path.');
+            } else if (err.message === 'MISSING_IMAGES') {
+                showNotification('Please upload images or paste paths.');
+            } else {
+                showNotification('Error saving product. Check file size.');
+            }
         } finally {
             uploadBtn.textContent = originalText;
             uploadBtn.disabled = false;
