@@ -190,7 +190,7 @@ function renderProducts() {
                 <p class="product-desc">${p.description || ''}</p>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal(${p.id})">BUY NOW</button>
-                    ${cart.some(item => item.id === p.id) 
+                    ${cart.some(item => item.id == p.id) 
                         ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
                         : `<button class="btn btn-cart" onclick="addToCart(${p.id})">ADD TO BAG</button>`
                     }
@@ -260,25 +260,20 @@ function togglePics(id) {
 }
 
 function addToCart(id) {
-    const p = products.find(prod => prod.id === id);
+    const p = products.find(prod => prod.id == id); // Use == for robust matching
     if (!p) return;
 
     // Visual feedback on the button itself
     const btn = event?.target;
-    const originalText = btn ? btn.textContent : 'ADD TO BAG';
     if (btn && btn.classList.contains('btn-cart')) {
         btn.textContent = 'ADDING...';
         btn.style.background = 'var(--gold-dark)';
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.style.background = '';
-        }, 600);
     }
 
-    const existing = cart.find(item => item.id === id);
+    const existing = cart.find(item => item.id == id);
     
     if (existing) {
-        renderCart(); // Still trigger the bump to show it was clicked
+        renderProducts(); // Refresh buttons
         showNotification(`${p.name} is already in your bag.`);
         return;
     }
@@ -286,7 +281,7 @@ function addToCart(id) {
     cart.push(p);
     saveCart();
     renderCart();
-    renderProducts(); // Update button states
+    renderProducts(); // Update button labels to 'IN BAG'
     showNotification(`${p.name} added to your bag.`);
 }
 
