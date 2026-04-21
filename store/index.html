@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahad's Tick Store</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta name="description"
+        content="Discover the exclusive collection at Ahad's Tick. Shop premium watches, luxury shoes, and stylish goggles.">
+    <meta name="keywords"
+        content="premium watches, luxury shoes, stylish goggles, Ahad's Tick, fashion accessories, online store">
+
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="#" class="logo" id="siteLogo">
+            <img src="logo.png" alt="Ahad's Tick Logo">
+        </a>
+        <div class="cart-icon" id="cartOpen">
+            <span class="icon">🛒</span>
+            <span class="cart-count">0</span>
+        </div>
+    </nav>
+
+    <!-- Categories -->
+    <div class="categories">
+        <button class="cat-btn active" data-cat="all">ALL COLLECTIONS</button>
+        <button class="cat-btn" data-cat="watches">WATCHES</button>
+        <button class="cat-btn" data-cat="shoes">SHOES</button>
+        <button class="cat-btn" data-cat="goggles">GOGGLES</button>
+    </div>
+
+    <!-- Product Feed -->
+    <main id="productFeed" class="product-feed">
+        <div class="loader">Unveiling Premium Collection...</div>
+    </main>
+
+    <!-- Shipping Modal -->
+    <div id="buyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Secure Your Order</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="orderForm">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="fullName" placeholder="Rahul Kumar" required>
+                    </div>
+                    <div class="input-group">
+                        <label>House/Building No</label>
+                        <input type="text" id="houseNo" placeholder="Flat 202, Sun Tower" required>
+                    </div>
+                    <div class="input-group full">
+                        <label>Complete Address</label>
+                        <textarea id="fullAdd" placeholder="Street name, Area info..." required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Key Landmark</label>
+                        <input type="text" id="landmark" placeholder="Near City Garden" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Area Nearby</label>
+                        <input type="text" id="nearBy" placeholder="Station Road" required>
+                    </div>
+                    <div class="input-group">
+                        <label>State</label>
+                        <input type="text" id="state" placeholder="Maharashtra" required>
+                    </div>
+                    <div class="input-group">
+                        <label>City</label>
+                        <input type="text" id="city" placeholder="Mumbai" required>
+                    </div>
+                    <div class="input-group">
+                        <label>District</label>
+                        <input type="text" id="dist" placeholder="Mumbai Suburban" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Pin Code</label>
+                        <input type="number" id="pin" placeholder="400001" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Primary Phone</label>
+                        <input type="tel" id="mob1" placeholder="9876543210" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Secondary Phone</label>
+                        <input type="tel" id="mob2" placeholder="8765432109" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Alternative No (Optional)</label>
+                        <input type="tel" id="altMob2" placeholder="Optional">
+                    </div>
+                </div>
+                <button type="submit" class="confirm-btn">Confirm via WhatsApp</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shopping Bag Modal -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Your Shopping Bag</h2>
+                <span class="closeCart">&times;</span>
+            </div>
+            <div id="cartItems" class="cart-items-list">
+                <!-- Cart items will be injected here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total Value:</span>
+                    <span id="cartTotalAmount">₹0</span>
+                </div>
+                <button class="confirm-btn" onclick="checkoutCart()">Order Now</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Admin Panel -->
+    <div id="adminBtn" class="admin-fab" title="Admin Panel">+</div>
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <!-- Login View -->
+            <div id="loginView">
+                <div class="modal-header">
+                    <h2>Admin Access</h2>
+                    <span class="closeAdmin">&times;</span>
+                </div>
+                <p style="color: var(--text-gray); margin-bottom: 20px;">Please authenticate to manage the collections.
+                </p>
+                <form id="loginForm">
+                    <div class="input-group full">
+                        <label>Admin Email</label>
+                        <input type="email" id="adminEmail" placeholder="akinggamer4854@gmail.com" required>
+                    </div>
+                    <div class="input-group full">
+                        <label>Password</label>
+                        <input type="password" id="adminPass" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="confirm-btn">Login to Studio</button>
+                </form>
+            </div>
+
+            <!-- Product Form View (Hidden by default) -->
+            <div id="productView" style="display: none;">
+                <div class="modal-header">
+                    <h2>Curation Studio</h2>
+                    <span class="closeAdminProduct">&times;</span>
+                </div>
+                <p style="color: var(--text-gray); margin-bottom: 20px; font-size: 0.9rem;">Add a new masterpiece to the
+                    collection.</p>
+                <form id="productForm">
+                    <div class="input-group">
+                        <label>Masterpiece Name</label>
+                        <input type="text" id="pName" placeholder="e.g. Rolex Submariner" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Premium Price (₹)</label>
+                        <input type="number" id="pPrice" placeholder="Value in Rupees" required>
+                    </div>
+                    <div class="input-group full">
+                        <label>Masterpiece Description</label>
+                        <textarea id="pDesc" placeholder="Describe the soul of this piece..." required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Collection</label>
+                        <select id="pCat">
+                            <option value="watches">WATCHES</option>
+                            <option value="shoes">SHOES</option>
+                            <option value="goggles">GOGGLES</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Upload Cinematic Video</label>
+                        <input type="file" id="pVideoFile" accept="video/*" required>
+                    </div>
+                    <div class="input-group full">
+                        <label>Upload Gallery Images (Select 5-6 images)</label>
+                        <input type="file" id="pImagesFile" accept="image/*" multiple required>
+                    </div>
+                    <button type="submit" id="uploadBtn" class="confirm-btn">Add to Gallery</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
