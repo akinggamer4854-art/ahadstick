@@ -263,18 +263,21 @@ function addToCart(id) {
     const p = products.find(prod => prod.id == id);
     if (!p) return;
 
-    // 1. Visual feedback on the button immediately
-    const btn = event?.target;
-    if (btn && btn.classList.contains('btn-cart')) {
-        btn.textContent = 'ADDING...';
-        btn.style.background = 'var(--gold-dark)';
-        btn.disabled = true;
-    }
-
+    // Check if ALREADY in cart FIRST
     const existing = cart.find(item => item.id == id);
     if (existing) {
         showNotification(`${p.name} is already in your bag.`);
+        renderProducts(); // Reset any accidental state
         return;
+    }
+
+    // 1. Visual feedback on the button immediately
+    const btn = event?.target;
+    if (btn && (btn.classList.contains('btn-cart') || btn.closest('.btn-cart'))) {
+        const targetBtn = btn.classList.contains('btn-cart') ? btn : btn.closest('.btn-cart');
+        targetBtn.textContent = 'ADDING...';
+        targetBtn.style.background = 'var(--gold-dark)';
+        targetBtn.disabled = true;
     }
 
     // 2. Add to cart & Update TOP icon immediately
