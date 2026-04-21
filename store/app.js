@@ -190,7 +190,10 @@ function renderProducts() {
                 <p class="product-desc">${p.description || ''}</p>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal(${p.id})">BUY NOW</button>
-                    <button class="btn btn-cart" onclick="addToCart(${p.id})">ADD TO BAG</button>
+                    ${cart.some(item => item.id === p.id) 
+                        ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
+                        : `<button class="btn btn-cart" onclick="addToCart(${p.id})">ADD TO BAG</button>`
+                    }
                 </div>
             </div>
         </div>
@@ -221,9 +224,22 @@ async function deleteProduct(id) {
 function setupScrollReveal() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+            const video = entry.target.querySelector('video');
+            
             if (entry.isIntersecting) {
+                // Reveal animation
                 entry.target.style.opacity = "1";
                 entry.target.style.transform = "translateY(0)";
+                
+                // Smart Play
+                if (video) {
+                    video.play().catch(() => {}); // Catch play-interruption errors
+                }
+            } else {
+                // Smart Pause to save CPU/Battery with many products
+                if (video) {
+                    video.pause();
+                }
             }
         });
     }, { threshold: 0.1 });
@@ -270,6 +286,7 @@ function addToCart(id) {
     cart.push(p);
     saveCart();
     renderCart();
+    renderProducts(); // Update button states
     showNotification(`${p.name} added to your bag.`);
 }
 
@@ -277,6 +294,7 @@ function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
     saveCart();
     renderCart();
+    renderProducts(); // Update button states
 }
 
 function saveCart() {
