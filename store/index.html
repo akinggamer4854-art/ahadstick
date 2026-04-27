@@ -19,6 +19,12 @@
         rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 </head>
 
 <body>
@@ -28,9 +34,14 @@
             <img src="logo.png" alt="Ahad's Tick Logo">
             <span class="brand-name">AHAD'S TICK <span class="store-text">STORE</span></span>
         </a>
-        <div class="cart-icon" id="cartOpen">
-            <span class="icon">🛒</span>
-            <span class="cart-count">0</span>
+        <div class="nav-actions">
+            <div class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">
+                <span class="theme-icon">🌙</span>
+            </div>
+            <div class="cart-icon" id="cartOpen">
+                <span class="icon">🛒</span>
+                <span class="cart-count">0</span>
+            </div>
         </div>
     </nav>
 
@@ -39,16 +50,22 @@
         <div class="hero-content">
             <h2 class="hero-tagline">PICK THE RIGHT <span class="gold-gradient-text">STYLE</span></h2>
             <div class="hero-divider"></div>
-            <p class="hero-subtext">Premium Watches • Luxury Shoes • Elite Goggles</p>
+            <p class="hero-subtext">Curated Elegance for Men & Women • Timeless Style for Every Step</p>
         </div>
     </header>
 
     <!-- Categories -->
+    <div class="special-row">
+        <button class="cat-btn special-btn" data-cat="today">TODAY NEW PRODUCT</button>
+    </div>
     <div class="categories">
-        <button class="cat-btn active" data-cat="all">ALL COLLECTIONS</button>
+        <button class="cat-btn active" data-cat="all">ALL</button>
         <button class="cat-btn" data-cat="watches">WATCHES</button>
         <button class="cat-btn" data-cat="shoes">SHOES</button>
         <button class="cat-btn" data-cat="goggles">GOGGLES</button>
+        <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
+        <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
+        <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
     </div>
 
     <!-- Product Feed -->
@@ -189,31 +206,28 @@
                     <div class="input-group">
                         <label>Collection</label>
                         <select id="pCat">
-                            <option value="watches">WATCHES</option>
-                            <option value="shoes">SHOES</option>
+                            <option value="watches">WATCHES (M)</option>
+                            <option value="shoes">SHOES (M)</option>
                             <option value="goggles">GOGGLES</option>
+                            <option value="menclothes">MEN CLOTHES</option>
+                            <option value="ladyfootwear">LADIES FOOTWEAR</option>
+                            <option value="ladywatch">LADIES WATCH</option>
                         </select>
                     </div>
                     <div class="input-group full">
-                        <label>Cinematic Video (Upload OR Paste Path)</label>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="file" id="pVideoFile" accept="video/*">
-                            <input type="text" id="pVideoPath" placeholder="videos/my-vid.mp4" style="flex:1;">
-                        </div>
+                        <label>Cinematic Video (Upload Masterpiece)</label>
+                        <input type="file" id="pVideoFile" accept="video/*" required>
                     </div>
 
-                    <div class="image-slots-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                        <label style="grid-column: span 2; color: var(--gold-primary); font-size: 0.8rem;">GALLERY IMAGES (Upto 5 Slots)</label>
+                    <div class="image-slots-grid"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                        <label style="grid-column: span 2; color: var(--gold-primary); font-size: 0.8rem;">GALLERY
+                            IMAGES (Min 1, Max 5 Slots)</label>
+                        <div class="input-group"><input type="file" class="p-img-slot" accept="image/*" required></div>
                         <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
                         <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
                         <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
                         <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
-                        <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
-                    </div>
-
-                    <div class="input-group full" style="margin-top: 10px;">
-                        <label>OR Paste Manual Image Paths (Comma Separated)</label>
-                        <input type="text" id="pImagesPath" placeholder="img1.jpg, img2.jpg...">
                     </div>
                     <button type="submit" id="uploadBtn" class="confirm-btn">Add to Gallery</button>
                 </form>
