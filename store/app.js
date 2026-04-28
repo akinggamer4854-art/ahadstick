@@ -139,6 +139,24 @@ const syncProducts = async () => {
 };
 
 
+function shareStore() {
+    const msg = `Hello! 🤝
+Aapka pasandida shopping destination Ahad Stick Store ab aur bhi behtareen collection ke saath taiyaar hai! ✨
+Kya aap bhi Master aur First Copy products ke deewane hain? Hamare paas aapke liye sab kuch hai:
+👔 For Men: Latest Watches, Stylish Goggles, Trendy Clothes aur Shoes ka dhamakedaar collection.
+👗 For Ladies: Premium Watches aur har tarah ke stylish Footwear/Shoes jo aapke har look ko perfect banaye.
+Kam daam mein wahi premium quality aur wahi look! 💯
+Abhi checkout karein hamari website:
+🌐 https://ahadstickstoree.netlify.app
+Aur latest updates ke liye hamein Instagram par follow karein:
+📸 @ahads_tick
+Apna agla order aaj hi book karein aur apni style ko up-to-date rakhein!
+Dhanyawad,
+Ahad Stick Store 🛍️`;
+    
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
 // Selectors
 const productFeed = document.getElementById('productFeed');
 const buyModal = document.getElementById('buyModal');
@@ -180,6 +198,92 @@ async function init() {
     setupScrollReveal();
     checkAdminAccess();
     setupTheme();
+    setupSearch();
+}
+
+function toggleSearch() {
+    const container = document.getElementById('searchContainer');
+    const input = document.getElementById('searchInput');
+    container.classList.toggle('active');
+    if (container.classList.contains('active')) {
+        input.focus();
+    }
+}
+
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                (p.description && p.description.toLowerCase().includes(query)) ||
+                p.category.toLowerCase().includes(query)
+            );
+            renderFilteredProducts(filtered);
+        });
+    }
+}
+
+function renderFilteredProducts(filtered) {
+    const productFeed = document.getElementById('productFeed');
+    if (filtered.length === 0) {
+        productFeed.innerHTML = `<div class="loader">No masterpieces found matching your search.</div>`;
+        return;
+    }
+
+    const html = filtered.map(p => {
+        let seed = 0;
+        for (let i = 0; i < String(p.id).length; i++) {
+            seed += String(p.id).charCodeAt(i);
+        }
+        const discountPercent = 20 + (seed % 21);
+        const mrp = Math.round(p.price / (1 - (discountPercent / 100)));
+
+        return `
+        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up">
+            <div class="carousel-container">
+                <div class="media-slide active">
+                    <video class="product-video" loop muted playsinline>
+                        <source src="${p.video}" type="video/mp4">
+                    </video>
+                </div>
+                <div class="video-overlay"></div>
+            </div>
+            <div class="product-info">
+                <h2 class="product-name">${p.name}</h2>
+                <div class="price-container">
+                    <span class="product-price">₹${p.price.toLocaleString()}</span>
+                    <span class="mrp-price">₹${mrp.toLocaleString()}</span>
+                    <span class="discount-badge">${discountPercent}% OFF</span>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
+                    ${cart.includes(String(p.id))
+                        ? `<button class="btn btn-cart" disabled>IN BAG</button>`
+                        : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
+                    }
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    productFeed.innerHTML = html;
+    setupScrollReveal();
+}
+
+function setCategory(cat) {
+    currentCategory = cat;
+    const btns = document.querySelectorAll('.cat-btn');
+    btns.forEach(btn => {
+        if (btn.getAttribute('data-cat') === cat) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    renderProducts();
+    window.scrollTo({ top: document.getElementById('productFeed').offsetTop - 100, behavior: 'smooth' });
 }
 
 function setupTheme() {
@@ -640,6 +744,22 @@ function setupEventListeners() {
     };
     closeAdminProduct.onclick = () => adminModal.style.display = "none";
     closeEdit.onclick = () => editModal.style.display = "none";
+
+    const subscribeBtn = document.querySelector('.subscribe-btn');
+    if (subscribeBtn) {
+        subscribeBtn.onclick = () => {
+            const phoneInput = document.getElementById('subscribePhone');
+            const phone = phoneInput.value.trim();
+            if (phone.length >= 10) {
+                const msg = `*✨ AHAD'S TICK - JOIN REQUEST ✨*\n\nHello! 🤝\nI want to join the *Elite Circle* of Ahad Stick Store to get the latest updates on premium collections.\n\nMy WhatsApp: ${phone}\n\nPlease add me to your broadcast list! 🛍️`;
+                window.open(`https://wa.me/919724732823?text=${encodeURIComponent(msg)}`, '_blank');
+                showNotification('Opening WhatsApp to join...');
+                phoneInput.value = '';
+            } else {
+                showNotification('Please enter a valid WhatsApp number.');
+            }
+        };
+    }
 
     window.onclick = (e) => {
         if (e.target == buyModal) buyModal.style.display = "none";

@@ -35,6 +35,10 @@
             <span class="brand-name">AHAD'S TICK <span class="store-text">STORE</span></span>
         </a>
         <div class="nav-actions">
+            <div class="search-container" id="searchContainer">
+                <input type="text" id="searchInput" placeholder="Search...">
+                <span class="search-icon" onclick="toggleSearch()">🔍</span>
+            </div>
             <div class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">
                 <span class="theme-icon">🌙</span>
             </div>
@@ -54,6 +58,38 @@
         </div>
     </header>
 
+    <!-- Trust Badges Section -->
+    <section class="trust-badges">
+        <div class="badge-item">
+            <div class="badge-icon">🚚</div>
+            <div class="badge-info">
+                <h4>Free Shipping</h4>
+                <p>On all orders above ₹599</p>
+            </div>
+        </div>
+        <div class="badge-item">
+            <div class="badge-icon">💎</div>
+            <div class="badge-info">
+                <h4>Premium Quality</h4>
+                <p>Certified luxury standards</p>
+            </div>
+        </div>
+        <div class="badge-item">
+            <div class="badge-icon">🔒</div>
+            <div class="badge-info">
+                <h4>Secure Checkout</h4>
+                <p>100% encrypted shopping</p>
+            </div>
+        </div>
+        <div class="badge-item">
+            <div class="badge-icon">📞</div>
+            <div class="badge-info">
+                <h4>24/7 Support</h4>
+                <p>Always here to help you</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Categories -->
 
     <div class="categories">
@@ -70,6 +106,50 @@
     <main id="productFeed" class="product-feed">
         <div class="loader">Unveiling Premium Collection...</div>
     </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <!-- Column 1: Brand Info -->
+            <div class="footer-brand">
+                <div class="logo">
+                    <img src="logo.png" alt="Ahad's Tick Logo">
+                    <span class="brand-name">AHAD'S TICK <span class="store-text">STORE</span></span>
+                </div>
+                <p class="footer-desc">Redefining luxury since 2024. Your premier destination for master-copy watches,
+                    shoes, and eyewear.</p>
+            </div>
+
+            <!-- Column 2: Quick Links -->
+            <div class="footer-links">
+                <h4>Collections</h4>
+                <ul>
+                    <li><a href="#" onclick="setCategory('watches')">Luxury Watches</a></li>
+                    <li><a href="#" onclick="setCategory('shoes')">Premium Shoes</a></li>
+                    <li><a href="#" onclick="setCategory('goggles')">Stylish Goggles</a></li>
+                    <li><a href="#" onclick="setCategory('menclothes')">Exclusive Mens Wear</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 3: Help & Support -->
+            <div class="footer-links">
+                <h4>Help & Support</h4>
+                <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 15px;">Contact us directly for
+                    orders and inquiries.</p>
+                <div class="social-btns">
+                    <a href="https://wa.me/919724732823" class="social-btn wa-btn" target="_blank">
+                        <span>💬</span> Chat on WhatsApp
+                    </a>
+                    <a href="https://www.instagram.com/ahads_tick" class="social-btn insta-btn" target="_blank">
+                        <span>📸</span> Follow on Instagram
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 AHAD'S TICK STORE. Crafted for the Extraordinary.</p>
+        </div>
+    </footer>
 
     <!-- Shipping Modal -->
     <div id="buyModal" class="modal">
