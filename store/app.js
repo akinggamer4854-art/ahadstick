@@ -157,6 +157,9 @@ const loginForm = document.getElementById('loginForm');
 const loginView = document.getElementById('loginView');
 const productView = document.getElementById('productView');
 const closeAdminProduct = document.querySelector('.closeAdminProduct');
+const editModal = document.getElementById('editModal');
+const closeEdit = document.querySelector('.closeEdit');
+const editForm = document.getElementById('editForm');
 
 // Initialize
 async function init() {
@@ -211,6 +214,11 @@ function checkAdminAccess() {
     const logoEl = document.getElementById('siteLogo');
 
     const handleLogoTrigger = (e) => {
+        // Ensure only tapping the image counts, not the text
+        if (e.target.tagName.toLowerCase() !== 'img') {
+            return;
+        }
+
         const currentTime = new Date().getTime();
 
         // Reset counter if gap between taps is more than 2 seconds
@@ -221,9 +229,11 @@ function checkAdminAccess() {
         lastClickTime = currentTime;
         logoClicks++;
 
-        if (logoClicks >= 5) {
+        const isVisible = adminBtn.style.display === 'flex';
+        const targetClicks = isVisible ? 3 : 20;
+
+        if (logoClicks >= targetClicks) {
             e.preventDefault();
-            const isVisible = adminBtn.style.display === 'flex';
             if (isVisible) {
                 adminBtn.style.display = 'none';
                 localStorage.setItem('hide_admin_fab', 'true');
@@ -262,16 +272,7 @@ function renderProducts(append = false) {
 
     const filtered = currentCategory === 'all'
         ? sortedProducts
-        : currentCategory === 'today'
-            ? sortedProducts.filter(p => {
-                if (!p.timestamp) return false;
-                const date = p.timestamp.toDate ? p.timestamp.toDate() : new Date(p.timestamp);
-                const today = new Date();
-                return date.getDate() === today.getDate() &&
-                    date.getMonth() === today.getMonth() &&
-                    date.getFullYear() === today.getFullYear();
-            })
-            : sortedProducts.filter(p => p.category === currentCategory);
+        : sortedProducts.filter(p => p.category === currentCategory);
 
     if (filtered.length === 0) {
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
@@ -281,6 +282,13 @@ function renderProducts(append = false) {
 
     const batch = filtered.slice(append ? displayedCount - 20 : 0, displayedCount);
     const html = batch.map(p => {
+        let seed = 0;
+        for (let i = 0; i < String(p.id).length; i++) {
+            seed += String(p.id).charCodeAt(i);
+        }
+        const discountPercent = 20 + (seed % 21);
+        const mrp = Math.round(p.price / (1 - (discountPercent / 100)));
+
         const slides = [p.video, ...p.images];
         return `
         <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
@@ -315,6 +323,9 @@ function renderProducts(append = false) {
                     <button class="control-btn pin-btn" onclick="togglePin('${p.id}')" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
                         ${p.pinned ? '📍' : '📌'}
                     </button>
+                    <button class="control-btn edit-btn" onclick="openEditModal('${p.id}')" title="Edit Product">
+                        ✏️
+                    </button>
                     <button class="control-btn delete-btn" onclick="deleteProduct('${p.id}')" title="Delete Product">
                         🗑️
                     </button>
@@ -323,7 +334,11 @@ function renderProducts(append = false) {
 
             <div class="product-info">
                 <h2 class="product-name">${p.name}</h2>
-                <p class="product-price">₹${p.price.toLocaleString()}</p>
+                <div class="price-container">
+                    <span class="product-price">₹${p.price.toLocaleString()}</span>
+                    <span class="mrp-price">₹${mrp.toLocaleString()}</span>
+                    <span class="discount-badge">${discountPercent}% OFF</span>
+                </div>
                 <div class="desc-wrapper">
                     <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
                     ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
@@ -446,6 +461,18 @@ function toggleDesc(id) {
     btn.textContent = desc.classList.contains('expanded') ? 'less' : 'more...';
 }
 
+function openEditModal(id) {
+    const product = products.find(p => String(p.id) === String(id));
+    if (!product) return;
+    
+    document.getElementById('editPid').value = id;
+    document.getElementById('editName').value = product.name;
+    document.getElementById('editPrice').value = product.price;
+    document.getElementById('editDesc').value = product.description;
+    
+    editModal.style.display = "block";
+}
+
 function changeSlide(id, dir) {
     const el = document.getElementById(`p-${id}`);
     const slides = el.querySelectorAll('.media-slide');
@@ -543,7 +570,7 @@ function renderCart() {
                     <h4>${item.name}</h4>
                     <p>₹${item.price.toLocaleString()}</p>
                 </div>
-                <button class="remove-item" onclick="removeFromCart(${item.id})">✕</button>
+                <button class="remove-item" onclick="removeFromCart('${item.id}')">✕</button>
             </div>
         `;
     }).join('');
@@ -612,11 +639,13 @@ function setupEventListeners() {
         productView.style.display = "none";
     };
     closeAdminProduct.onclick = () => adminModal.style.display = "none";
+    closeEdit.onclick = () => editModal.style.display = "none";
 
     window.onclick = (e) => {
         if (e.target == buyModal) buyModal.style.display = "none";
         if (e.target == cartModal) cartModal.style.display = "none";
         if (e.target == adminModal) adminModal.style.display = "none";
+        if (e.target == editModal) editModal.style.display = "none";
     };
 
     cartOpen.onclick = () => {
@@ -680,6 +709,46 @@ function setupEventListeners() {
         } finally {
             loginBtn.textContent = originalText;
             loginBtn.disabled = false;
+        }
+    };
+
+    editForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('saveEditBtn');
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            const id = document.getElementById('editPid').value;
+            const newName = document.getElementById('editName').value;
+            const newPrice = Number(document.getElementById('editPrice').value);
+            const newDesc = document.getElementById('editDesc').value;
+
+            if (isFirebaseAvailable && isFirebaseConfigured) {
+                await db.collection('products').doc(id).update({
+                    name: newName,
+                    price: newPrice,
+                    description: newDesc
+                });
+            } else {
+                const product = products.find(p => String(p.id) === String(id));
+                if (product) {
+                    product.name = newName;
+                    product.price = newPrice;
+                    product.description = newDesc;
+                    await saveLocalProduct(product);
+                    syncProducts();
+                }
+            }
+            showNotification('Masterpiece updated successfully.');
+            editModal.style.display = "none";
+        } catch (err) {
+            console.error(err);
+            showNotification('Error updating product.');
+        } finally {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
         }
     };
 
