@@ -355,10 +355,14 @@ body {
 }
 
 .footer-desc {
-    color: var(--text-gray);
-    font-size: 0.95rem;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.05rem;
+    font-weight: 500;
     margin-bottom: 25px;
     line-height: 1.7;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
 }
 
 .social-links {
@@ -589,7 +593,7 @@ body {
     display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
-.cat-btn {
+.cat-btn, .price-btn {
     background: var(--glass);
     border: 1px solid var(--glass-border);
     color: var(--text-gray);
@@ -603,17 +607,89 @@ body {
     flex-shrink: 0; /* Important: prevents buttons from squishing */
 }
 
-.cat-btn.active {
+.cat-btn.active, .price-btn.active {
     background: var(--gold-gradient);
     color: #000;
     border-color: transparent;
     box-shadow: var(--gold-glow);
 }
 
-.cat-btn:hover:not(.active) {
+.cat-btn:hover:not(.active), .price-btn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-white);
     border-color: var(--gold-primary);
+}
+
+/* Side Menu Styles */
+.side-menu {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100vh;
+    background: var(--nav-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 2000;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid var(--glass-border);
+    box-shadow: 5px 0 25px rgba(0,0,0,0.5);
+}
+
+.side-menu.open {
+    left: 0;
+}
+
+.side-menu-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.side-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.side-menu-header h3 {
+    font-family: var(--font-heading);
+    color: var(--text-white);
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+}
+
+.close-menu {
+    font-size: 2rem;
+    color: var(--text-gray);
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-menu:hover {
+    color: var(--gold-primary);
+}
+
+.side-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.side-categories .cat-btn {
+    text-align: left;
+    width: 100%;
+    border-radius: 10px;
+    padding: 12px 20px;
+}
+
+.menu-toggle:hover {
+    transform: scale(1.1);
+    background: var(--glass-border) !important;
 }
 
 

@@ -36,6 +36,7 @@
         </a>
 
         <div class="search-container" id="searchContainer">
+            <span class="menu-icon" id="menuToggle" style="margin-right: 10px; cursor: pointer; font-size: 1.4rem; color: var(--gold-primary); display: flex; align-items: center;">☰</span>
             <input type="text" id="searchInput" placeholder="Find your perfect style...">
             <span class="search-icon">🔍</span>
         </div>
@@ -62,16 +63,31 @@
 
 
 
-    <!-- Categories -->
+    <!-- Side Menu -->
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-content">
+            <div class="side-menu-header">
+                <h3>Collections</h3>
+                <span class="close-menu" id="closeMenu">&times;</span>
+            </div>
+            <div class="side-categories">
+                <button class="cat-btn active" data-cat="all">ALL</button>
+                <button class="cat-btn" data-cat="watches">WATCHES</button>
+                <button class="cat-btn" data-cat="shoes">SHOES</button>
+                <button class="cat-btn" data-cat="goggles">GOGGLES</button>
+                <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
+                <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
+                <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
+            </div>
+        </div>
+    </div>
 
-    <div class="categories">
-        <button class="cat-btn active" data-cat="all">ALL</button>
-        <button class="cat-btn" data-cat="watches">WATCHES</button>
-        <button class="cat-btn" data-cat="shoes">SHOES</button>
-        <button class="cat-btn" data-cat="goggles">GOGGLES</button>
-        <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
-        <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
-        <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
+    <!-- Price Filters -->
+    <div class="categories" id="priceFilters">
+        <button class="price-btn active" data-price="all">ALL PRICES</button>
+        <button class="price-btn" data-price="1999">UNDER 1999</button>
+        <button class="price-btn" data-price="4999">UNDER 4999</button>
+        <button class="price-btn" data-price="above_4999">4999+</button>
     </div>
 
     <!-- Product Feed -->
@@ -85,7 +101,7 @@
             <div class="badge-icon">🚚</div>
             <div class="badge-info">
                 <h4>Free Shipping</h4>
-                <p>On all orders above ₹599</p>
+                <p>Available on all orders</p>
             </div>
         </div>
         <div class="badge-item">
@@ -116,12 +132,11 @@
         <div class="footer-grid">
             <!-- Column 1: Brand Info -->
             <div class="footer-brand">
-                <div class="logo">
+                <div class="logo" id="footerLogo">
                     <img src="logo.png" alt="Ahad's Tick Logo">
                     <span class="brand-name">AHAD'S TICK <span class="store-text">STORE</span></span>
                 </div>
-                <p class="footer-desc">Redefining luxury since 2024. Your premier destination for master-copy watches,
-                    shoes, and eyewear.</p>
+                <p class="footer-desc">Keep shopping at Ahad's Tick Store — elevating your everyday look with exclusive collections and handpicked fashion.</p>
             </div>
 
             <!-- Column 2: Quick Links -->

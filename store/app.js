@@ -59,7 +59,7 @@ const saveAllToLocal = async (productsArray) => {
 const CLOUDINARY_CLOUD_NAME = 'dsdmmfblu'; // Change this to your cloud name
 const CLOUDINARY_UPLOAD_PRESET = 'ahadstick'; // Change this to your unsigned preset
 
-// Initialize Firebase only if script is loaded and keys are present
+// Initialize Firebase only if script is loaded and keys are pr esent
 const isFirebaseAvailable = typeof firebase !== 'undefined';
 if (isFirebaseAvailable && isFirebaseConfigured) {
     firebase.initializeApp(firebaseConfig);
@@ -72,6 +72,7 @@ const db = (isFirebaseAvailable && isFirebaseConfigured) ? firebase.firestore() 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentCategory = 'all';
+let currentPriceFilter = 'all';
 let isAdminLoggedIn = false;
 
 const syncProducts = async () => {
@@ -153,7 +154,7 @@ Aur latest updates ke liye hamein Instagram par follow karein:
 Apna agla order aaj hi book karein aur apni style ko up-to-date rakhein!
 Dhanyawad,
 Ahad Stick Store 🛍️`;
-    
+
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -215,8 +216,8 @@ function setupSearch() {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
-            const filtered = products.filter(p => 
-                p.name.toLowerCase().includes(query) || 
+            const filtered = products.filter(p =>
+                p.name.toLowerCase().includes(query) ||
                 (p.description && p.description.toLowerCase().includes(query)) ||
                 p.category.toLowerCase().includes(query)
             );
@@ -260,9 +261,9 @@ function renderFilteredProducts(filtered) {
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
                     ${cart.includes(String(p.id))
-                        ? `<button class="btn btn-cart" disabled>IN BAG</button>`
-                        : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
-                    }
+                ? `<button class="btn btn-cart" disabled>IN BAG</button>`
+                : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
+            }
                 </div>
             </div>
         </div>`;
@@ -353,8 +354,11 @@ function checkAdminAccess() {
         }
     };
 
-    logoEl.addEventListener('touchstart', handleLogoTrigger, { passive: false });
-    logoEl.addEventListener('click', handleLogoTrigger);
+    const footerLogo = document.getElementById('footerLogo');
+    if (footerLogo) {
+        footerLogo.addEventListener('touchstart', handleLogoTrigger, { passive: false });
+        footerLogo.addEventListener('click', handleLogoTrigger);
+    }
 }
 
 let displayedCount = 20;
@@ -374,9 +378,18 @@ function renderProducts(append = false) {
         return timeB - timeA;
     });
 
-    const filtered = currentCategory === 'all'
+    let filtered = currentCategory === 'all'
         ? sortedProducts
         : sortedProducts.filter(p => p.category === currentCategory);
+
+    if (currentPriceFilter !== 'all') {
+        if (currentPriceFilter === 'above_4999') {
+            filtered = filtered.filter(p => p.price > 4999);
+        } else {
+            const maxPrice = parseInt(currentPriceFilter);
+            filtered = filtered.filter(p => p.price <= maxPrice);
+        }
+    }
 
     if (filtered.length === 0) {
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
@@ -568,12 +581,12 @@ function toggleDesc(id) {
 function openEditModal(id) {
     const product = products.find(p => String(p.id) === String(id));
     if (!product) return;
-    
+
     document.getElementById('editPid').value = id;
     document.getElementById('editName').value = product.name;
     document.getElementById('editPrice').value = product.price;
     document.getElementById('editDesc').value = product.description;
-    
+
     editModal.style.display = "block";
 }
 
@@ -724,12 +737,43 @@ function openOrderModal(id) {
 }
 
 function setupEventListeners() {
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sideMenu = document.getElementById('sideMenu');
+    const closeMenu = document.getElementById('closeMenu');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sideMenu.classList.add('open');
+        });
+    }
+
+    if (closeMenu) {
+        closeMenu.addEventListener('click', () => {
+            sideMenu.classList.remove('open');
+        });
+    }
+
+    // Category Buttons
     document.querySelectorAll('.cat-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const active = document.querySelector('.cat-btn.active');
+            const active = document.querySelector('.side-categories .cat-btn.active');
             if (active) active.classList.remove('active');
             e.target.classList.add('active');
             currentCategory = e.target.getAttribute('data-cat');
+            displayedCount = 20; // Reset for infinite scroll
+            renderProducts();
+            if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
+        });
+    });
+
+    // Price Filter Buttons
+    document.querySelectorAll('.price-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const active = document.querySelector('.price-btn.active');
+            if (active) active.classList.remove('active');
+            e.target.classList.add('active');
+            currentPriceFilter = e.target.getAttribute('data-price');
             displayedCount = 20; // Reset for infinite scroll
             renderProducts();
         });
