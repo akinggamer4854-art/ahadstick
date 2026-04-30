@@ -49,12 +49,6 @@
         </div>
 
         <div class="nav-actions">
-            <div class="theme-toggle" id="wishlistOpen" title="My Wishlist" style="color: var(--gold-primary);">
-                <span class="icon">❤️</span>
-            </div>
-            <div class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">
-                <span class="theme-icon">🌙</span>
-            </div>
             <div class="cart-icon" id="cartOpen">
                 <span class="icon">🛒</span>
                 <span class="cart-count">0</span>
@@ -81,6 +75,11 @@
                 <span class="close-menu" id="closeMenu">&times;</span>
             </div>
             <div class="side-categories">
+                <div id="themeToggle" class="cat-btn"
+                    style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 15px; border-color: var(--gold-primary);">
+                    <span id="themeLabel">Dark Mode</span>
+                    <span class="theme-icon">🌙</span>
+                </div>
                 <button class="cat-btn active" data-cat="all">ALL</button>
                 <button class="cat-btn" data-cat="watches">WATCHES</button>
                 <button class="cat-btn" data-cat="shoes">SHOES</button>
@@ -88,7 +87,25 @@
                 <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
                 <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
                 <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
-                <button class="cat-btn" data-cat="wishlist" style="color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">❤️ MY WISHLIST</button>
+                <button id="sideWishlistBtn" class="cat-btn"
+                    style="color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">❤️ MY WISHLIST</button>
+            </div>
+
+            <!-- Auth Section -->
+            <div id="authSection"
+                style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                <!-- Before Login -->
+                <button id="loginBtn" class="confirm-btn" style="width: 100%; padding: 12px; font-size: 0.85rem;">Login
+                    / Sign up Richvibe</button>
+
+                <!-- After Login (Hidden by default) -->
+                <div id="userProfile" style="display: none; text-align: center;">
+                    <p id="userNameDisplay"
+                        style="color: var(--gold-primary); font-weight: 700; margin-bottom: 8px; font-size: 1rem;">👤
+                        Hello, Guest</p>
+                    <button id="logoutBtn"
+                        style="background: none; border: 1px solid var(--text-gray); color: var(--text-gray); padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; cursor: pointer;">Logout</button>
+                </div>
             </div>
         </div>
     </div>
@@ -104,10 +121,38 @@
     <!-- Product Feed -->
     <main id="productFeed" class="product-feed">
         <!-- Initial Skeleton Loaders for Premium Feel -->
-        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
-        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
-        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
-        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
+        <div class="skeleton-card">
+            <div class="skeleton-media"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line price"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-media"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line price"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-media"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line price"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-media"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line price"></div>
+            </div>
+        </div>
     </main>
 
     <!-- Trust Badges Section -->
@@ -143,20 +188,27 @@
     </section>
 
     <!-- About Us / Story Section -->
-    <section class="about-section" style="padding: 60px 20px; background: rgba(255,255,255,0.02); text-align: center; border-top: 1px solid var(--glass-border);">
+    <section class="about-section"
+        style="padding: 60px 20px; background: rgba(255,255,255,0.02); text-align: center; border-top: 1px solid var(--glass-border);">
         <div style="max-width: 800px; margin: 0 auto;">
-            <h2 style="font-family: var(--font-heading); color: var(--gold-primary); font-size: 2.2rem; margin-bottom: 20px;">The Richvibe Story</h2>
+            <h2
+                style="font-family: var(--font-heading); color: var(--gold-primary); font-size: 2.2rem; margin-bottom: 20px;">
+                The Richvibe Story</h2>
             <p style="color: var(--text-gray); line-height: 1.8; font-size: 1.1rem; font-style: italic;">
-                "Richvibe was born from a passion for timeless elegance and modern craftsmanship. We don't just sell products; we curate masterpieces that define your unique vibe. From elite watches to premium footwear, every piece is handpicked to ensure you always stand out from the crowd."
+                "Richvibe was born from a passion for timeless elegance and modern craftsmanship. We don't just sell
+                products; we curate masterpieces that define your unique vibe. From elite watches to premium footwear,
+                every piece is handpicked to ensure you always stand out from the crowd."
             </p>
             <div style="display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap;">
                 <div style="text-align: center;">
                     <h3 style="color: var(--gold-primary); font-size: 1.5rem;">5000+</h3>
-                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Style Icons Served</p>
+                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Style Icons Served
+                    </p>
                 </div>
                 <div style="text-align: center;">
                     <h3 style="color: var(--gold-primary); font-size: 1.5rem;">100%</h3>
-                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Handpicked Quality</p>
+                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Handpicked Quality
+                    </p>
                 </div>
                 <div style="text-align: center;">
                     <h3 style="color: var(--gold-primary); font-size: 1.5rem;">24/7</h3>
@@ -184,10 +236,13 @@
             <!-- Column 2: Newsletter/VIP -->
             <div class="footer-links">
                 <h4>Join the Elite</h4>
-                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 12px;">Get early access to drops & exclusive offers.</p>
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 12px;">Get early access to drops &
+                    exclusive offers.</p>
                 <div class="subscribe-form" style="display: flex; gap: 8px; flex-direction: column;">
-                    <input type="tel" id="subscribePhone" placeholder="WhatsApp Number" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 8px;">
-                    <button class="btn btn-buy subscribe-btn" style="padding: 10px; font-size: 0.8rem;">JOIN ELITE CIRCLE</button>
+                    <input type="tel" id="subscribePhone" placeholder="WhatsApp Number"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 8px;">
+                    <button class="btn btn-buy subscribe-btn" style="padding: 10px; font-size: 0.8rem;">JOIN ELITE
+                        CIRCLE</button>
                 </div>
             </div>
 
@@ -228,10 +283,12 @@
                 </div>
                 <!-- PWA Install Button -->
                 <div id="installAppContainer" style="display: none; margin-top: 20px;">
-                    <button id="installAppBtn" class="social-btn" style="width: 100%; justify-content: center; background: var(--gold-gradient); color: #000; border: none; font-weight: 800; gap: 8px;">
+                    <button id="installAppBtn" class="social-btn"
+                        style="width: 100%; justify-content: center; background: var(--gold-gradient); color: #000; border: none; font-weight: 800; gap: 8px;">
                         📲 Install Richvibe at your mobile
                     </button>
-                    <p style="font-size: 0.7rem; color: var(--text-gray); margin-top: 5px; font-style: italic;">Optional: Add to Home Screen for quick access</p>
+                    <p style="font-size: 0.7rem; color: var(--text-gray); margin-top: 5px; font-style: italic;">
+                        Optional: Add to Home Screen for quick access</p>
                 </div>
             </div>
         </div>
@@ -248,57 +305,41 @@
                 <span class="close">&times;</span>
             </div>
             <form id="orderForm">
-                <div class="form-grid">
-                    <div class="input-group">
-                        <label>Full Name</label>
-                        <input type="text" id="fullName" placeholder="Rahul Kumar" required>
-                    </div>
-                    <div class="input-group">
-                        <label>House/Building No</label>
-                        <input type="text" id="houseNo" placeholder="Flat 202, Sun Tower" required>
-                    </div>
-                    <div class="input-group full">
-                        <label>Complete Address</label>
-                        <textarea id="fullAdd" placeholder="Street name, Area info..." required></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label>Key Landmark</label>
-                        <input type="text" id="landmark" placeholder="Near City Garden" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Area Nearby</label>
-                        <input type="text" id="nearBy" placeholder="Station Road" required>
-                    </div>
-                    <div class="input-group">
-                        <label>State</label>
-                        <input type="text" id="state" placeholder="Maharashtra" required>
-                    </div>
+                <div class="input-group full">
+                    <label>Your Name</label>
+                    <input type="text" id="custName" placeholder="Enter your name" required>
+                </div>
+                <div class="input-group full">
+                    <label>Mobile Number</label>
+                    <input type="number" id="custPhone" placeholder="Primary 10-digit number" required>
+                </div>
+                <div class="input-group full">
+                    <label>Second Mobile Number</label>
+                    <input type="number" id="custPhone2" placeholder="Secondary 10-digit number">
+                </div>
+                <div class="input-group full">
+                    <label>Complete Address</label>
+                    <textarea id="fullAdd" placeholder="Flat/House No, Street, Area..." required rows="3"></textarea>
+                </div>
+                <div class="input-group full">
+                    <label>Area Nearby</label>
+                    <input type="text" id="nearBy" placeholder="e.g. Near City Garden" required>
+                </div>
+                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="input-group">
                         <label>City</label>
                         <input type="text" id="city" placeholder="Mumbai" required>
                     </div>
                     <div class="input-group">
-                        <label>District</label>
-                        <input type="text" id="dist" placeholder="Mumbai Suburban" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Pin Code</label>
-                        <input type="number" id="pin" placeholder="400001" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Primary Phone</label>
-                        <input type="tel" id="mob1" placeholder="9876543210" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Secondary Phone</label>
-                        <input type="tel" id="mob2" placeholder="8765432109" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Alternative No (Optional)</label>
-                        <input type="tel" id="altMob2" placeholder="Optional">
+                        <label>State</label>
+                        <input type="text" id="state" placeholder="Maharashtra" required>
                     </div>
                 </div>
-                <button type="submit" class="confirm-btn">Confirm via WhatsApp</button>
+                <div class="input-group full">
+                    <label>Pin Code</label>
+                    <input type="number" id="pin" placeholder="400001" required>
+                </div>
+                <button type="submit" class="confirm-btn">Confirm My Order</button>
             </form>
         </div>
     </div>
@@ -328,13 +369,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Your Wishlist ❤️</h2>
-                <span class="closeWishlist" style="font-size: 2rem; cursor: pointer; color: var(--text-gray);">&times;</span>
+                <span class="closeWishlist"
+                    style="font-size: 2rem; cursor: pointer; color: var(--text-gray);">&times;</span>
             </div>
             <div id="wishlistItems" class="cart-items-list">
                 <!-- Wishlist items will be injected here -->
             </div>
             <div class="cart-footer">
-                <p style="text-align: center; color: var(--text-gray); font-size: 0.85rem;">Items saved for later. Move them to bag when ready!</p>
+                <p style="text-align: center; color: var(--text-gray); font-size: 0.85rem;">Items saved for later. Move
+                    them to bag when ready!</p>
             </div>
         </div>
     </div>
@@ -444,19 +487,86 @@
         </div>
     </div>
 
+    <!-- Hidden Recaptcha for Phone Auth -->
+    <div id="recaptcha-container"></div>
+
+    <!-- User Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 id="authTitle">Join Richvibe</h2>
+                <span class="closeAuth" style="font-size: 2rem; cursor: pointer;">&times;</span>
+            </div>
+
+            <!-- Step 1: Identity -->
+            <div id="authStep1">
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Enter your Mobile Number or
+                    Gmail to continue.</p>
+                <div class="input-group full">
+                    <input type="text" id="authIdentity" placeholder="Phone Number or Email" style="padding: 15px;">
+                </div>
+                <button id="authNextBtn" class="confirm-btn" style="margin-top: 15px;">Get OTP</button>
+            </div>
+
+            <!-- Step 2: OTP (Now comes immediately after Identity) -->
+            <div id="authStep2" style="display: none;">
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">We've sent a 4-digit code.
+                    Please enter it below.</p>
+                <div id="otpContainer" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                    <input type="number" class="otp-input" maxlength="1"
+                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
+                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1"
+                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
+                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1"
+                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
+                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1"
+                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
+                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                </div>
+                <button id="verifyOtpBtn" class="confirm-btn">Verify OTP</button>
+                <p id="resendOtp"
+                    style="text-align: center; color: var(--gold-primary); font-size: 0.8rem; margin-top: 15px; cursor: pointer;">
+                    Resend OTP</p>
+            </div>
+
+            <!-- Step 3: Name Registration (Only for new users after OTP) -->
+            <div id="authStep3" style="display: none;">
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Almost there! Please tell us
+                    your name.</p>
+                <div class="input-group full">
+                    <label>Full Name</label>
+                    <input type="text" id="authName" placeholder="Enter your name" style="padding: 15px;">
+                </div>
+                <button id="authSignupBtn" class="confirm-btn" style="margin-top: 15px;">Complete Join</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Multi-Image Zoom Modal -->
     <div id="zoomModal" class="modal" style="padding: 0; display: none; background: rgba(0,0,0,0.95);">
-        <span class="close" style="position: absolute; top: 20px; right: 30px; z-index: 2001; color: white; font-size: 2.5rem;">&times;</span>
-        
-        <div class="zoom-nav" style="position: absolute; top: 50%; width: 100%; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 20px; z-index: 2001; pointer-events: none;">
-            <div class="nav-arr" onclick="changeZoomSlide(-1)" style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">❮</div>
-            <div class="nav-arr" onclick="changeZoomSlide(1)" style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">❯</div>
+        <span class="close"
+            style="position: absolute; top: 20px; right: 30px; z-index: 2001; color: white; font-size: 2.5rem;">&times;</span>
+
+        <div class="zoom-nav"
+            style="position: absolute; top: 50%; width: 100%; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 20px; z-index: 2001; pointer-events: none;">
+            <div class="nav-arr" onclick="changeZoomSlide(-1)"
+                style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">
+                ❮</div>
+            <div class="nav-arr" onclick="changeZoomSlide(1)"
+                style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">
+                ❯</div>
         </div>
 
-        <div id="zoomCounter" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: var(--gold-primary); font-weight: 700; font-size: 1.1rem; z-index: 2001; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--gold-primary);">1 / 1</div>
+        <div id="zoomCounter"
+            style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: var(--gold-primary); font-weight: 700; font-size: 1.1rem; z-index: 2001; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--gold-primary);">
+            1 / 1</div>
 
         <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-            <img id="zoomedImg" src="" style="max-width: 95%; max-height: 90%; object-fit: contain; border: 1px solid var(--gold-primary); box-shadow: var(--gold-glow);">
+            <img id="zoomedImg" src=""
+                style="max-width: 95%; max-height: 90%; object-fit: contain; border: 1px solid var(--gold-primary); box-shadow: var(--gold-glow);">
         </div>
     </div>
 

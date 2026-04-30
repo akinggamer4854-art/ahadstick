@@ -69,11 +69,11 @@ const db = (isFirebaseAvailable && isFirebaseConfigured) ? firebase.firestore() 
 
 
 
-let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentCategory = 'all';
 let currentPriceFilter = 'all';
 let isAdminLoggedIn = false;
+let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
 let currentZoomImages = [];
 let currentZoomIndex = 0;
@@ -205,13 +205,15 @@ async function init() {
     setupSearch();
     setupScrollProgress();
     setupPWA();
+    setupUserAuth();
 
-    const wishlistOpen = document.getElementById('wishlistOpen');
+    const sideWishlistBtn = document.getElementById('sideWishlistBtn');
     const wishlistModal = document.getElementById('wishlistModal');
-    if (wishlistOpen) {
-        wishlistOpen.onclick = () => {
+    if (sideWishlistBtn) {
+        sideWishlistBtn.onclick = () => {
             renderWishlist();
             wishlistModal.style.display = 'block';
+            if (sideMenu) sideMenu.classList.remove('open');
         };
     }
 }
@@ -327,7 +329,7 @@ function setCategory(cat) {
 function setupTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
+    updateThemeUI(savedTheme);
 
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', () => {
@@ -335,16 +337,23 @@ function setupTheme() {
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
+        updateThemeUI(newTheme);
     });
 }
 
-function updateThemeIcon(theme) {
+function updateThemeUI(theme) {
     const icon = document.querySelector('.theme-icon');
+    const label = document.getElementById('themeLabel');
+    
     if (icon) {
         icon.textContent = theme === 'dark' ? '🌙' : '☀️';
     }
+    
+    if (label) {
+        label.textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+    }
 }
+
 
 function checkAdminAccess() {
     // Hidden by default for all users. 
@@ -754,6 +763,7 @@ function removeFromCart(id) {
 
 function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
+    syncUserData(); // Sync to Firestore
 }
 
 function renderWishlist() {
@@ -794,6 +804,7 @@ function toggleWishlist(id) {
         showNotification('Removed from Wishlist.');
     }
     localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    syncUserData(); // Sync to Firestore
     renderProducts();
 }
 
@@ -942,10 +953,13 @@ function setupEventListeners() {
     // Category Buttons
     document.querySelectorAll('.cat-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // Ignore if this is the theme toggle button
+            if (btn.id === 'themeToggle') return;
+
             const active = document.querySelector('.side-categories .cat-btn.active');
             if (active) active.classList.remove('active');
-            e.target.classList.add('active');
-            currentCategory = e.target.getAttribute('data-cat');
+            btn.classList.add('active');
+            currentCategory = btn.getAttribute('data-cat');
             displayedCount = 20; // Reset for infinite scroll
             renderProducts();
             if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
@@ -1145,34 +1159,26 @@ function setupEventListeners() {
         }
 
         const details = {
-            name: document.getElementById('fullName').value,
-            house: document.getElementById('houseNo').value,
+            name: document.getElementById('custName').value,
+            phone: document.getElementById('custPhone').value,
+            phone2: document.getElementById('custPhone2').value || 'N/A',
             address: document.getElementById('fullAdd').value,
-            landmark: document.getElementById('landmark').value,
             nearby: document.getElementById('nearBy').value,
             state: document.getElementById('state').value,
             city: document.getElementById('city').value,
-            dist: document.getElementById('dist').value,
-            pin: document.getElementById('pin').value,
-            mob1: document.getElementById('mob1').value,
-            mob2: document.getElementById('mob2').value,
-            alt: document.getElementById('altMob2').value || 'N/A'
+            pin: document.getElementById('pin').value
         };
 
         const waNumber = "919724732823";
-        const message = `*✨ AHAD'S TICK - ${orderTitle} ✨*\n\n` +
+        const message = `*✨ RICHVIBE - ${orderTitle} ✨*\n\n` +
             `${productSection}\n\n` +
             `*CUSTOMER DETAILS:*\n` +
             `👤 Name: ${details.name}\n` +
-            `📞 Phone 1: ${details.mob1}\n` +
-            `📞 Phone 2: ${details.mob2}\n` +
-            `📞 Alt Phone: ${details.alt}\n` +
-            `🏠 House/Building: ${details.house}\n` +
+            `📞 Phone 1: ${details.phone}\n` +
+            `📞 Phone 2: ${details.phone2}\n` +
             `🗺️ Full Address: ${details.address}\n` +
-            `📍 Landmark: ${details.landmark}\n` +
             `🚩 Nearby: ${details.nearby}\n` +
             `🏙️ City: ${details.city}\n` +
-            `🏘️ District: ${details.dist}\n` +
             `🏳️ State: ${details.state}\n` +
             `🔢 PIN Code: ${details.pin}\n\n` +
             `_Please confirm this order._`;
@@ -1356,4 +1362,316 @@ function setupPWA() {
         console.log('App Installed Successfully');
         if (installContainer) installContainer.style.display = 'none';
     });
+}
+
+// User Authentication Logic
+let authState = {
+    identity: '',
+    name: '',
+    otp: '',
+    isNew: false
+};
+let resendInterval = null;
+let confirmationResult = null; // For Firebase Phone Auth
+let recaptchaVerifier = null;
+
+function setupUserAuth() {
+    const authModal = document.getElementById('authModal');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const authNextBtn = document.getElementById('authNextBtn');
+    const authSignupBtn = document.getElementById('authSignupBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const closeAuth = document.querySelector('.closeAuth');
+
+    if (currentUser) updateAuthUI(true);
+
+    if (loginBtn) loginBtn.onclick = () => {
+        resetAuthModal();
+        authModal.style.display = 'block';
+    };
+    if (closeAuth) closeAuth.onclick = () => {
+        authModal.style.display = 'none';
+        if (resendInterval) clearInterval(resendInterval);
+    };
+    if (logoutBtn) logoutBtn.onclick = () => logoutUser();
+
+    // Step 1 -> OTP
+    if (authNextBtn) authNextBtn.onclick = () => {
+        const iden = document.getElementById('authIdentity').value.trim();
+        if (!iden) return alert('Please enter Email or Phone');
+        
+        authState.identity = iden;
+        goToStep(2); // Instant OTP
+    };
+
+    const resendOtp = document.getElementById('resendOtp');
+    if (resendOtp) {
+        resendOtp.onclick = () => {
+            if (resendOtp.style.pointerEvents === 'none') return;
+            goToStep(2);
+        };
+    }
+
+    // Step 2 -> Verify & Check
+    if (verifyOtpBtn) verifyOtpBtn.onclick = () => verifyRealOTP();
+
+    // Step 3 -> Finish
+    if (authSignupBtn) authSignupBtn.onclick = () => {
+        const name = document.getElementById('authName').value.trim();
+        if (!name) return alert('Please enter your name');
+        authState.name = name;
+        completeLogin();
+    };
+
+    // OTP Input Focus Logic
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach((input, idx) => {
+        input.onkeyup = (e) => {
+            if (e.key >= 0 && e.key <= 9) {
+                if (idx < 3) otpInputs[idx + 1].focus();
+            } else if (e.key === 'Backspace') {
+                if (idx > 0) otpInputs[idx - 1].focus();
+            }
+        };
+    });
+}
+
+function goToStep(step) {
+    document.getElementById('authStep1').style.display = 'none';
+    document.getElementById('authStep2').style.display = 'none';
+    document.getElementById('authStep3').style.display = 'none';
+    
+    document.getElementById('authStep' + step).style.display = 'block';
+    
+    if (step === 2) {
+        startResendTimer();
+        sendRealOTP(authState.identity);
+    }
+}
+
+async function sendRealOTP(identity) {
+    const isEmail = identity.includes('@');
+    
+    // Clear inputs
+    document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+
+    if (isEmail) {
+        // --- Real Email OTP Logic (using EmailJS) ---
+        authState.otp = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        console.log(`Sending Real Email OTP to ${identity}: ${authState.otp}`);
+        
+        // EmailJS placeholder (Owner needs to add their Service ID)
+        const templateParams = {
+            to_email: identity,
+            to_name: identity.split('@')[0],
+            otp_code: authState.otp,
+            from_name: 'Richvibe Store'
+        };
+
+        // Simulated success for now (Owner needs to set up EmailJS Service ID)
+        // In a real setup: emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+        showNotification('Richvibe OTP sent to your Email.');
+        
+    } else {
+        // --- Real SMS OTP Logic (using Firebase Phone Auth) ---
+        try {
+            if (!recaptchaVerifier) {
+                recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    'size': 'invisible'
+                });
+            }
+
+            // Ensure number is in international format (e.g., +91)
+            let phoneNumber = identity;
+            if (!phoneNumber.startsWith('+')) {
+                phoneNumber = '+91' + phoneNumber; // Default to India if no prefix
+            }
+
+            const appVerificationId = recaptchaVerifier;
+            confirmationResult = await firebase.auth().signInWithPhoneNumber(phoneNumber, appVerificationId);
+            showNotification('Richvibe OTP sent via SMS.');
+            
+        } catch (error) {
+            console.error("SMS Auth Failed:", error);
+            alert("Error sending SMS. Please try Gmail or check your number.");
+            goToStep(1);
+        }
+    }
+}
+
+async function verifyRealOTP() {
+    const inputs = document.querySelectorAll('.otp-input');
+    const enteredCode = Array.from(inputs).map(i => i.value).join('');
+
+    if (enteredCode.length < 4) return alert('Please enter 4-digit code');
+
+    const verifyBtn = document.getElementById('verifyOtpBtn');
+    verifyBtn.textContent = 'Verifying...';
+    verifyBtn.disabled = true;
+
+    try {
+        const isEmail = authState.identity.includes('@');
+        
+        if (isEmail) {
+            // Email OTP check (Local verification for this demo setup)
+            if (enteredCode === authState.otp) {
+                await checkUserAndLogin();
+            } else {
+                throw new Error('Invalid OTP');
+            }
+        } else {
+            // Real Firebase SMS Verification
+            if (confirmationResult) {
+                await confirmationResult.confirm(enteredCode);
+                await checkUserAndLogin();
+            } else {
+                throw new Error('Verification session expired. Try again.');
+            }
+        }
+    } catch (error) {
+        console.error("Verification Error:", error);
+        alert(error.message || 'Invalid code. Please try again.');
+    } finally {
+        verifyBtn.textContent = 'Verify OTP';
+        verifyBtn.disabled = false;
+    }
+}
+
+async function checkUserAndLogin() {
+    // Check if user exists in Firestore
+    const userRef = db.collection('users').doc(authState.identity.replace(/[^a-zA-Z0-0]/g, '_'));
+    const doc = await userRef.get();
+
+    if (doc.exists) {
+        authState.isNew = false;
+        authState.name = doc.data().name;
+        completeLogin();
+    } else {
+        authState.isNew = true;
+        goToStep(3); // Ask for name for new users
+    }
+}
+
+function startResendTimer() {
+    const resendBtn = document.getElementById('resendOtp');
+    if (!resendBtn) return;
+
+    if (resendInterval) clearInterval(resendInterval);
+    
+    let timeLeft = 60;
+    resendBtn.style.pointerEvents = 'none';
+    resendBtn.style.color = 'var(--text-gray)';
+    resendBtn.style.cursor = 'default';
+    
+    resendBtn.textContent = `Resend OTP in ${timeLeft}s`;
+
+    resendInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(resendInterval);
+            resendBtn.textContent = 'Resend OTP';
+            resendBtn.style.pointerEvents = 'auto';
+            resendBtn.style.color = 'var(--gold-primary)';
+            resendBtn.style.cursor = 'pointer';
+        } else {
+            resendBtn.textContent = `Resend OTP in ${timeLeft}s`;
+        }
+    }, 1000);
+}
+
+async function completeLogin() {
+    currentUser = {
+        name: authState.name,
+        identity: authState.identity
+    };
+    
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // Save/Update user in Firestore
+    const userRef = db.collection('users').doc(authState.identity.replace(/[^a-zA-Z0-0]/g, '_'));
+    await userRef.set({
+        name: authState.name,
+        identity: authState.identity,
+        lastLogin: new Date().toISOString()
+    }, { merge: true });
+
+    // Sync Cart/Wishlist from Cloud if user is old
+    if (!authState.isNew) {
+        const doc = await userRef.get();
+        if (doc.exists && doc.data().savedData) {
+            const data = doc.data().savedData;
+            if (data.cart) cart = data.cart;
+            if (data.wishlist) wishlist = data.wishlist;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        }
+    }
+
+    // Send Notification to Owner on Signup
+    if (authState.isNew) {
+        notifyOwner(authState.name, authState.identity);
+    }
+
+    updateAuthUI(true);
+    document.getElementById('authModal').style.display = 'none';
+    showNotification(`Welcome back, ${authState.name}!`);
+    renderProducts();
+    renderCart();
+}
+
+function updateAuthUI(isLoggedIn) {
+    const loginBtn = document.getElementById('loginBtn');
+    const userProfile = document.getElementById('userProfile');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    
+    if (isLoggedIn && currentUser) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'block';
+        if (userNameDisplay) userNameDisplay.textContent = `👤 Hello, ${currentUser.name.split(' ')[0]}`;
+    } else {
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (userProfile) userProfile.style.display = 'none';
+    }
+}
+
+function logoutUser() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    updateAuthUI(false);
+    showNotification('Logged out successfully.');
+}
+
+async function syncUserData() {
+    if (!currentUser) return;
+    const userRef = db.collection('users').doc(currentUser.identity.replace(/[^a-zA-Z0-0]/g, '_'));
+    await userRef.set({
+        savedData: {
+            cart: cart,
+            wishlist: wishlist
+        }
+    }, { merge: true });
+}
+
+function notifyOwner(name, identity) {
+    console.log(`NOTIFYING OWNER: New Signup - ${name} (${identity})`);
+    // In a real production app, you'd trigger a cloud function or EmailJS here
+    // For now, we'll simulate the "Data to Mail" request
+    fetch('https://formspree.io/f/xvonzjry', { // Placeholder or using a service
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            subject: 'New Richvibe Signup',
+            message: `Name: ${name}\nIdentity: ${identity}\nTime: ${new Date().toLocaleString()}`
+        })
+    }).catch(err => console.log('Notification failed', err));
+}
+
+function resetAuthModal() {
+    authState = { identity: '', name: '', otp: '', isNew: false };
+    document.getElementById('authIdentity').value = '';
+    document.getElementById('authName').value = '';
+    document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+    goToStep(1);
 }
