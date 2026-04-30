@@ -59,7 +59,7 @@ const saveAllToLocal = async (productsArray) => {
 const CLOUDINARY_CLOUD_NAME = 'dsdmmfblu'; // Change this to your cloud name
 const CLOUDINARY_UPLOAD_PRESET = 'ahadstick'; // Change this to your unsigned preset
 
-// Initialize Firebase only if script is loaded and keys are present
+// Initialize Firebase only if script is loaded and keys are pr esent
 const isFirebaseAvailable = typeof firebase !== 'undefined';
 if (isFirebaseAvailable && isFirebaseConfigured) {
     firebase.initializeApp(firebaseConfig);
@@ -72,6 +72,7 @@ const db = (isFirebaseAvailable && isFirebaseConfigured) ? firebase.firestore() 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentCategory = 'all';
+let currentPriceFilter = 'all';
 let isAdminLoggedIn = false;
 
 const syncProducts = async () => {
@@ -153,7 +154,7 @@ Aur latest updates ke liye hamein Instagram par follow karein:
 Apna agla order aaj hi book karein aur apni style ko up-to-date rakhein!
 Dhanyawad,
 Ahad Stick Store 🛍️`;
-    
+
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -215,8 +216,8 @@ function setupSearch() {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
-            const filtered = products.filter(p => 
-                p.name.toLowerCase().includes(query) || 
+            const filtered = products.filter(p =>
+                p.name.toLowerCase().includes(query) ||
                 (p.description && p.description.toLowerCase().includes(query)) ||
                 p.category.toLowerCase().includes(query)
             );
@@ -244,7 +245,7 @@ function renderFilteredProducts(filtered) {
         <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up">
             <div class="carousel-container">
                 <div class="media-slide active">
-                    <video class="product-video" loop muted playsinline>
+                    <video class="product-video" loop muted playsinline autoplay>
                         <source src="${p.video}" type="video/mp4">
                     </video>
                 </div>
@@ -257,12 +258,14 @@ function renderFilteredProducts(filtered) {
                     <span class="mrp-price">₹${mrp.toLocaleString()}</span>
                     <span class="discount-badge">${discountPercent}% OFF</span>
                 </div>
+                <p class="product-desc" id="desc-${p.id}">${p.description || 'Premium quality masterpiece.'}</p>
+                <button class="read-more-btn" onclick="toggleDescription(this, '${p.id}')">Read More</button>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
                     ${cart.includes(String(p.id))
-                        ? `<button class="btn btn-cart" disabled>IN BAG</button>`
-                        : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
-                    }
+                ? `<button class="btn btn-cart" disabled>IN BAG</button>`
+                : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
+            }
                 </div>
             </div>
         </div>`;
@@ -270,6 +273,17 @@ function renderFilteredProducts(filtered) {
 
     productFeed.innerHTML = html;
     setupScrollReveal();
+}
+
+function toggleDescription(btn, id) {
+    const desc = document.getElementById(`desc-${id}`);
+    if (desc.classList.contains('expanded')) {
+        desc.classList.remove('expanded');
+        btn.innerText = 'Read More';
+    } else {
+        desc.classList.add('expanded');
+        btn.innerText = 'Read Less';
+    }
 }
 
 function setCategory(cat) {
@@ -353,14 +367,58 @@ function checkAdminAccess() {
         }
     };
 
-    logoEl.addEventListener('touchstart', handleLogoTrigger, { passive: false });
-    logoEl.addEventListener('click', handleLogoTrigger);
+    const footerLogo = document.getElementById('footerLogo');
+    if (footerLogo) {
+        footerLogo.addEventListener('touchstart', handleLogoTrigger, { passive: false });
+        footerLogo.addEventListener('click', handleLogoTrigger);
+    }
 }
 
 let displayedCount = 20;
 let isRendering = false;
 
+function updateAdminStats() {
+    const container = document.getElementById('adminStatsContainer');
+    if (!container) return;
+
+    if (!isAdminLoggedIn) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const counts = {
+        total: products.length,
+        watches: 0,
+        shoes: 0,
+        goggles: 0,
+        menclothes: 0,
+        ladyfootwear: 0,
+        ladywatch: 0
+    };
+
+    products.forEach(p => {
+        if (counts[p.category] !== undefined) {
+            counts[p.category]++;
+        }
+    });
+
+    container.innerHTML = `
+        <h4>Upload Statistics</h4>
+        <div class="admin-stats-grid">
+            <div class="admin-stat-item"><span>WATCHES</span> <span>${counts.watches}</span></div>
+            <div class="admin-stat-item"><span>SHOES</span> <span>${counts.shoes}</span></div>
+            <div class="admin-stat-item"><span>GOGGLES</span> <span>${counts.goggles}</span></div>
+            <div class="admin-stat-item"><span>MENS WEAR</span> <span>${counts.menclothes}</span></div>
+            <div class="admin-stat-item"><span>LADIES FOOTWEAR</span> <span>${counts.ladyfootwear}</span></div>
+            <div class="admin-stat-item"><span>LADIES WATCHES</span> <span>${counts.ladywatch}</span></div>
+            <div class="admin-stat-item total"><span>TOTAL PRODUCTS</span> <span>${counts.total}</span></div>
+        </div>
+    `;
+    container.style.display = 'block';
+}
+
 function renderProducts(append = false) {
+    updateAdminStats();
     if (isRendering && !append) return;
     isRendering = true;
 
@@ -374,9 +432,18 @@ function renderProducts(append = false) {
         return timeB - timeA;
     });
 
-    const filtered = currentCategory === 'all'
+    let filtered = currentCategory === 'all'
         ? sortedProducts
         : sortedProducts.filter(p => p.category === currentCategory);
+
+    if (currentPriceFilter !== 'all') {
+        if (currentPriceFilter === 'above_4999') {
+            filtered = filtered.filter(p => p.price > 4999);
+        } else {
+            const maxPrice = parseInt(currentPriceFilter);
+            filtered = filtered.filter(p => p.price <= maxPrice);
+        }
+    }
 
     if (filtered.length === 0) {
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
@@ -568,12 +635,12 @@ function toggleDesc(id) {
 function openEditModal(id) {
     const product = products.find(p => String(p.id) === String(id));
     if (!product) return;
-    
+
     document.getElementById('editPid').value = id;
     document.getElementById('editName').value = product.name;
     document.getElementById('editPrice').value = product.price;
     document.getElementById('editDesc').value = product.description;
-    
+
     editModal.style.display = "block";
 }
 
@@ -657,24 +724,42 @@ function renderCart() {
     }
 
     if (cart.length === 0) {
-        cartItems.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--text-gray);">Your bag is empty.</p>`;
+        cartItems.innerHTML = `<p style="text-align:center; padding: 40px 20px; color: var(--text-gray); font-size: 0.9rem;">Your bag is empty.<br>Add some masterpieces to get started.</p>`;
         cartTotalAmount.textContent = `₹0`;
+        
+        // Disable order button if empty
+        const orderBtn = document.querySelector('#cartModal .confirm-btn');
+        if (orderBtn) {
+            orderBtn.style.opacity = '0.5';
+            orderBtn.style.cursor = 'not-allowed';
+            orderBtn.textContent = 'Bag is Empty';
+        }
         return;
+    }
+
+    // Reset order button if not empty
+    const orderBtn = document.querySelector('#cartModal .confirm-btn');
+    if (orderBtn) {
+        orderBtn.style.opacity = '1';
+        orderBtn.style.cursor = 'pointer';
+        orderBtn.textContent = 'ORDER NOW';
     }
 
     let total = 0;
     cartItems.innerHTML = cart.map(itemId => {
         const item = products.find(p => String(p.id) === String(itemId));
-        if (!item) return ''; // Should not happen
+        if (!item) return ''; 
         total += item.price;
         return `
             <div class="cart-item">
-                <img src="${item.images[0]}" alt="${item.name}">
+                <div class="cart-item-media">
+                    <img src="${item.images && item.images.length > 0 ? item.images[0] : ''}" class="cart-img" loading="lazy">
+                </div>
                 <div class="cart-item-info">
                     <h4>${item.name}</h4>
                     <p>₹${item.price.toLocaleString()}</p>
                 </div>
-                <button class="remove-item" onclick="removeFromCart('${item.id}')">✕</button>
+                <button class="remove-item" onclick="removeFromCart('${item.id}')" title="Remove Item">✕</button>
             </div>
         `;
     }).join('');
@@ -683,7 +768,10 @@ function renderCart() {
 }
 
 function checkoutCart() {
-    if (cart.length === 0) return;
+    if (cart.length === 0) {
+        showNotification('Add items to your bag first!');
+        return;
+    }
     cartModal.style.display = "none";
     openOrderModal(null);
 }
@@ -724,12 +812,43 @@ function openOrderModal(id) {
 }
 
 function setupEventListeners() {
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sideMenu = document.getElementById('sideMenu');
+    const closeMenu = document.getElementById('closeMenu');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sideMenu.classList.add('open');
+        });
+    }
+
+    if (closeMenu) {
+        closeMenu.addEventListener('click', () => {
+            sideMenu.classList.remove('open');
+        });
+    }
+
+    // Category Buttons
     document.querySelectorAll('.cat-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const active = document.querySelector('.cat-btn.active');
+            const active = document.querySelector('.side-categories .cat-btn.active');
             if (active) active.classList.remove('active');
             e.target.classList.add('active');
             currentCategory = e.target.getAttribute('data-cat');
+            displayedCount = 20; // Reset for infinite scroll
+            renderProducts();
+            if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
+        });
+    });
+
+    // Price Filter Buttons
+    document.querySelectorAll('.price-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const active = document.querySelector('.price-btn.active');
+            if (active) active.classList.remove('active');
+            e.target.classList.add('active');
+            currentPriceFilter = e.target.getAttribute('data-price');
             displayedCount = 20; // Reset for infinite scroll
             renderProducts();
         });
@@ -751,7 +870,7 @@ function setupEventListeners() {
             const phoneInput = document.getElementById('subscribePhone');
             const phone = phoneInput.value.trim();
             if (phone.length >= 10) {
-                const msg = `*✨ AHAD'S TICK - JOIN REQUEST ✨*\n\nHello! 🤝\nI want to join the *Elite Circle* of Ahad Stick Store to get the latest updates on premium collections.\n\nMy WhatsApp: ${phone}\n\nPlease add me to your broadcast list! 🛍️`;
+                const msg = `*✨ RICHVIBE - JOIN REQUEST ✨*\n\nHello! 🤝\nI want to join the *Elite Circle* of Richvibe Store to get the latest updates on premium collections.\n\nMy WhatsApp: ${phone}\n\nPlease add me to your broadcast list! 🛍️`;
                 window.open(`https://wa.me/919724732823?text=${encodeURIComponent(msg)}`, '_blank');
                 showNotification('Opening WhatsApp to join...');
                 phoneInput.value = '';
