@@ -21,6 +21,7 @@
         rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -30,6 +31,8 @@
 </head>
 
 <body>
+    <!-- Scroll Progress Line -->
+    <div id="scrollProgress"></div>
     <!-- Navbar -->
     <nav class="navbar">
         <a href="#" class="logo" id="siteLogo">
@@ -46,6 +49,9 @@
         </div>
 
         <div class="nav-actions">
+            <div class="theme-toggle" id="wishlistOpen" title="My Wishlist" style="color: var(--gold-primary);">
+                <span class="icon">❤️</span>
+            </div>
             <div class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">
                 <span class="theme-icon">🌙</span>
             </div>
@@ -82,6 +88,7 @@
                 <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
                 <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
                 <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
+                <button class="cat-btn" data-cat="wishlist" style="color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">❤️ MY WISHLIST</button>
             </div>
         </div>
     </div>
@@ -91,12 +98,16 @@
         <button class="price-btn active" data-price="all">ALL PRICES</button>
         <button class="price-btn" data-price="1999">UNDER 1999</button>
         <button class="price-btn" data-price="4999">UNDER 4999</button>
-        <button class="price-btn" data-price="above_4999">4999+</button>
+        <button class="price-btn" data-price="above_4999">UP TO 4999+</button>
     </div>
 
     <!-- Product Feed -->
     <main id="productFeed" class="product-feed">
-        <div class="loader">Unveiling Premium Collection...</div>
+        <!-- Initial Skeleton Loaders for Premium Feel -->
+        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
+        <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line price"></div></div></div>
     </main>
 
     <!-- Trust Badges Section -->
@@ -131,6 +142,30 @@
         </div>
     </section>
 
+    <!-- About Us / Story Section -->
+    <section class="about-section" style="padding: 60px 20px; background: rgba(255,255,255,0.02); text-align: center; border-top: 1px solid var(--glass-border);">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h2 style="font-family: var(--font-heading); color: var(--gold-primary); font-size: 2.2rem; margin-bottom: 20px;">The Richvibe Story</h2>
+            <p style="color: var(--text-gray); line-height: 1.8; font-size: 1.1rem; font-style: italic;">
+                "Richvibe was born from a passion for timeless elegance and modern craftsmanship. We don't just sell products; we curate masterpieces that define your unique vibe. From elite watches to premium footwear, every piece is handpicked to ensure you always stand out from the crowd."
+            </p>
+            <div style="display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <h3 style="color: var(--gold-primary); font-size: 1.5rem;">5000+</h3>
+                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Style Icons Served</p>
+                </div>
+                <div style="text-align: center;">
+                    <h3 style="color: var(--gold-primary); font-size: 1.5rem;">100%</h3>
+                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Handpicked Quality</p>
+                </div>
+                <div style="text-align: center;">
+                    <h3 style="color: var(--gold-primary); font-size: 1.5rem;">24/7</h3>
+                    <p style="color: var(--text-gray); font-size: 0.8rem; text-transform: uppercase;">Elite Support</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-grid">
@@ -146,7 +181,17 @@
                     collections and handpicked fashion.</p>
             </div>
 
-            <!-- Column 2: Quick Links -->
+            <!-- Column 2: Newsletter/VIP -->
+            <div class="footer-links">
+                <h4>Join the Elite</h4>
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-bottom: 12px;">Get early access to drops & exclusive offers.</p>
+                <div class="subscribe-form" style="display: flex; gap: 8px; flex-direction: column;">
+                    <input type="tel" id="subscribePhone" placeholder="WhatsApp Number" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 8px;">
+                    <button class="btn btn-buy subscribe-btn" style="padding: 10px; font-size: 0.8rem;">JOIN ELITE CIRCLE</button>
+                </div>
+            </div>
+
+            <!-- Column 3: Quick Links -->
             <div class="footer-links">
                 <h4>Collections</h4>
                 <ul>
@@ -180,6 +225,13 @@
                                 d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.036 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334" />
                         </svg> Follow on Instagram
                     </a>
+                </div>
+                <!-- PWA Install Button -->
+                <div id="installAppContainer" style="display: none; margin-top: 20px;">
+                    <button id="installAppBtn" class="social-btn" style="width: 100%; justify-content: center; background: var(--gold-gradient); color: #000; border: none; font-weight: 800; gap: 8px;">
+                        📲 Install Richvibe at your mobile
+                    </button>
+                    <p style="font-size: 0.7rem; color: var(--text-gray); margin-top: 5px; font-style: italic;">Optional: Add to Home Screen for quick access</p>
                 </div>
             </div>
         </div>
@@ -267,6 +319,22 @@
                     <span id="cartTotalAmount">₹0</span>
                 </div>
                 <button class="confirm-btn" onclick="checkoutCart()">Order Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Your Wishlist ❤️</h2>
+                <span class="closeWishlist" style="font-size: 2rem; cursor: pointer; color: var(--text-gray);">&times;</span>
+            </div>
+            <div id="wishlistItems" class="cart-items-list">
+                <!-- Wishlist items will be injected here -->
+            </div>
+            <div class="cart-footer">
+                <p style="text-align: center; color: var(--text-gray); font-size: 0.85rem;">Items saved for later. Move them to bag when ready!</p>
             </div>
         </div>
     </div>
@@ -373,6 +441,22 @@
                     <button type="submit" id="uploadBtn" class="confirm-btn">Add to Gallery</button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- Multi-Image Zoom Modal -->
+    <div id="zoomModal" class="modal" style="padding: 0; display: none; background: rgba(0,0,0,0.95);">
+        <span class="close" style="position: absolute; top: 20px; right: 30px; z-index: 2001; color: white; font-size: 2.5rem;">&times;</span>
+        
+        <div class="zoom-nav" style="position: absolute; top: 50%; width: 100%; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 20px; z-index: 2001; pointer-events: none;">
+            <div class="nav-arr" onclick="changeZoomSlide(-1)" style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">❮</div>
+            <div class="nav-arr" onclick="changeZoomSlide(1)" style="pointer-events: auto; background: rgba(0,0,0,0.5); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--gold-primary); cursor: pointer;">❯</div>
+        </div>
+
+        <div id="zoomCounter" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: var(--gold-primary); font-weight: 700; font-size: 1.1rem; z-index: 2001; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--gold-primary);">1 / 1</div>
+
+        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <img id="zoomedImg" src="" style="max-width: 95%; max-height: 90%; object-fit: contain; border: 1px solid var(--gold-primary); box-shadow: var(--gold-glow);">
         </div>
     </div>
 

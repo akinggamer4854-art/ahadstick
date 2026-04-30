@@ -18,6 +18,36 @@
     --nav-bg: rgba(5, 5, 5, 0.8);
 }
 
+/* Premium Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gold-gradient);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-primary);
+}
+
+/* Scroll Progress Line */
+#scrollProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--gold-gradient);
+    z-index: 9999;
+    transition: width 0.1s ease;
+}
+
 /* Light Mode Theme: Ivory White + Charcoal Black + Soft Gold */
 [data-theme="light"] {
     --bg-black: #FFFFF0; /* Ivory White */
@@ -1348,6 +1378,154 @@ body {
 @keyframes pulse {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
+}
+
+/* Skeleton Loaders */
+.skeleton-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.skeleton-media {
+    width: 100%;
+    height: 300px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.05), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-info {
+    padding: 20px;
+    flex: 1;
+}
+
+.skeleton-line {
+    height: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.02), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line.short { width: 60%; }
+.skeleton-line.price { width: 40%; height: 20px; background: rgba(212, 175, 55, 0.05); }
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Floating WhatsApp Support */
+.whatsapp-float {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 55px;
+    height: 55px;
+    background: #25D366;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3);
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 15px 30px rgba(37, 211, 102, 0.4);
+}
+
+.whatsapp-float .tooltip {
+    position: absolute;
+    left: 70px;
+    background: #25D366;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.3s;
+    transform: translateX(-10px);
+}
+
+.whatsapp-float:hover .tooltip {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Wishlist Button */
+.wishlist-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 35;
+    transition: all 0.3s;
+    font-size: 1.2rem;
+}
+
+.wishlist-btn.active {
+    background: var(--gold-primary);
+    color: #000;
+    border-color: var(--gold-primary);
+    transform: scale(1.1);
+}
+
+.wishlist-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Share Button on Card */
+.card-share-btn {
+    position: absolute;
+    top: 65px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 35;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.card-share-btn:hover {
+    background: white;
+    color: black;
+    transform: scale(1.1);
 }
 
 /* Responsive Overhaul */

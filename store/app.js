@@ -74,6 +74,9 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let currentCategory = 'all';
 let currentPriceFilter = 'all';
 let isAdminLoggedIn = false;
+let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+let currentZoomImages = [];
+let currentZoomIndex = 0;
 
 const syncProducts = async () => {
     if (isFirebaseAvailable && isFirebaseConfigured) {
@@ -200,6 +203,27 @@ async function init() {
     checkAdminAccess();
     setupTheme();
     setupSearch();
+    setupScrollProgress();
+    setupPWA();
+
+    const wishlistOpen = document.getElementById('wishlistOpen');
+    const wishlistModal = document.getElementById('wishlistModal');
+    if (wishlistOpen) {
+        wishlistOpen.onclick = () => {
+            renderWishlist();
+            wishlistModal.style.display = 'block';
+        };
+    }
+}
+
+function setupScrollProgress() {
+    window.addEventListener('scroll', () => {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        const progressLine = document.getElementById('scrollProgress');
+        if (progressLine) progressLine.style.width = scrolled + "%";
+    });
 }
 
 function toggleSearch() {
@@ -323,13 +347,11 @@ function updateThemeIcon(theme) {
 }
 
 function checkAdminAccess() {
-    if (localStorage.getItem('hide_admin_fab') === 'false') {
-        adminBtn.style.display = 'flex';
-    }
-
+    // Hidden by default for all users. 
+    // We no longer show it based on localStorage to ensure no customer ever sees it accidentally.
+    
     let logoClicks = 0;
     let lastClickTime = 0;
-    const logoEl = document.getElementById('siteLogo');
 
     const handleLogoTrigger = (e) => {
         // Ensure only tapping the image counts, not the text
@@ -354,13 +376,11 @@ function checkAdminAccess() {
             e.preventDefault();
             if (isVisible) {
                 adminBtn.style.display = 'none';
-                localStorage.setItem('hide_admin_fab', 'true');
                 isAdminLoggedIn = false;
                 renderProducts();
                 showNotification('Admin Mode Disabled.');
             } else {
                 adminBtn.style.display = 'flex';
-                localStorage.setItem('hide_admin_fab', 'false');
                 showNotification('Admin Mode Enabled. Tap the + button.');
             }
             logoClicks = 0;
@@ -417,7 +437,7 @@ function updateAdminStats() {
     container.style.display = 'block';
 }
 
-function renderProducts(append = false) {
+async function renderProducts(append = false) {
     updateAdminStats();
     if (isRendering && !append) return;
     isRendering = true;
@@ -451,6 +471,23 @@ function renderProducts(append = false) {
         return;
     }
 
+    // Show Skeleton Loaders if it's the first render or category change
+    if (!append && products.length > 0) {
+        productFeed.innerHTML = Array(4).fill(0).map(() => `
+            <div class="skeleton-card">
+                <div class="skeleton-media"></div>
+                <div class="skeleton-info">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line price"></div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Short delay to show skeletons (premium feel)
+        await new Promise(r => setTimeout(r, 800));
+    }
+
     const batch = filtered.slice(append ? displayedCount - 20 : 0, displayedCount);
     const html = batch.map(p => {
         let seed = 0;
@@ -475,7 +512,7 @@ function renderProducts(append = false) {
                 
                 <!-- Other Slides: Images -->
                 ${p.images.map((img, idx) => `
-                    <div class="media-slide" data-index="${idx + 1}">
+                    <div class="media-slide" data-index="${idx + 1}" onclick="openZoom('${p.id}', ${idx})" style="cursor: zoom-in;">
                         <img src="${img}" class="product-img" loading="lazy">
                     </div>
                 `).join('')}
@@ -487,6 +524,14 @@ function renderProducts(append = false) {
                 </div>
 
                 <div class="video-overlay"></div>
+            </div>
+
+            <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
+                ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
+            </div>
+
+            <div class="card-share-btn" onclick="shareProduct('${p.id}')" title="Share this masterpiece">
+                📤
             </div>
 
             ${isAdminLoggedIn ? `
@@ -711,6 +756,71 @@ function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
+function renderWishlist() {
+    const wishlistItems = document.getElementById('wishlistItems');
+    if (!wishlistItems) return;
+
+    if (wishlist.length === 0) {
+        wishlistItems.innerHTML = `<p style="text-align:center; padding: 40px 20px; color: var(--text-gray); font-size: 0.9rem;">Your wishlist is empty. ❤️ some masterpieces to save them!</p>`;
+        return;
+    }
+
+    wishlistItems.innerHTML = wishlist.map(itemId => {
+        const item = products.find(p => String(p.id) === String(itemId));
+        if (!item) return '';
+        return `
+            <div class="cart-item">
+                <div class="cart-item-media">
+                    <img src="${item.images && item.images.length > 0 ? item.images[0] : ''}" class="cart-img" loading="lazy">
+                </div>
+                <div class="cart-item-info">
+                    <h4>${item.name}</h4>
+                    <p>₹${item.price.toLocaleString()}</p>
+                    <button class="btn btn-buy" onclick="addToCart('${item.id}'); wishlistModal.style.display='none';" style="padding: 5px 10px; font-size: 0.7rem; margin-top: 5px;">ADD TO BAG</button>
+                </div>
+                <button class="remove-item" onclick="toggleWishlist('${item.id}'); renderWishlist();" title="Remove">✕</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleWishlist(id) {
+    const idx = wishlist.indexOf(String(id));
+    if (idx === -1) {
+        wishlist.push(String(id));
+        showNotification('Added to your Wishlist!');
+    } else {
+        wishlist.splice(idx, 1);
+        showNotification('Removed from Wishlist.');
+    }
+    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    renderProducts();
+}
+
+function shareProduct(id) {
+    const p = products.find(prod => String(prod.id) === String(id));
+    if (!p) return;
+
+    const msg = `*✨ RICHVIBE - FEATURED MASTERPIECE ✨*\n\n` +
+        `Check out this ${p.name}!\n` +
+        `💰 Price: ₹${p.price.toLocaleString()}\n\n` +
+        `📦 View Details here:\n` +
+        `${window.location.origin}#p-${p.id}\n\n` +
+        `_Elevate your style with Richvibe._`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: p.name,
+            text: msg,
+            url: `${window.location.origin}#p-${p.id}`
+        }).catch(() => {
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        });
+    } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+}
+
 function renderCart() {
     const counts = document.querySelectorAll('.cart-count');
     counts.forEach(el => el.textContent = cart.length);
@@ -854,6 +964,9 @@ function setupEventListeners() {
         });
     });
 
+    const closeWishlist = document.querySelector('.closeWishlist');
+    if (closeWishlist) closeWishlist.onclick = () => wishlistModal.style.display = "none";
+
     closeBtn.onclick = () => buyModal.style.display = "none";
     closeCart.onclick = () => cartModal.style.display = "none";
     closeAdmin.onclick = () => {
@@ -865,6 +978,19 @@ function setupEventListeners() {
     closeEdit.onclick = () => editModal.style.display = "none";
 
     const subscribeBtn = document.querySelector('.subscribe-btn');
+    const zoomModal = document.getElementById('zoomModal');
+    const zoomedImg = document.getElementById('zoomedImg');
+    const closeZoom = zoomModal.querySelector('.close');
+
+    closeZoom.onclick = () => zoomModal.style.display = "none";
+    window.onclick = (e) => {
+        if (e.target == zoomModal) zoomModal.style.display = "none";
+        if (e.target == buyModal) buyModal.style.display = "none";
+        if (e.target == cartModal) cartModal.style.display = "none";
+        if (e.target == wishlistModal) wishlistModal.style.display = "none";
+        if (e.target == adminModal) adminModal.style.display = "none";
+        if (e.target == editModal) editModal.style.display = "none";
+    };
     if (subscribeBtn) {
         subscribeBtn.onclick = () => {
             const phoneInput = document.getElementById('subscribePhone');
@@ -1157,4 +1283,77 @@ function setupEventListeners() {
 
 
 }
+
+function openZoom(pid, index) {
+    const p = products.find(prod => String(prod.id) === String(pid));
+    if (!p) return;
+
+    currentZoomImages = p.images;
+    currentZoomIndex = index;
+
+    updateZoomUI();
+    document.getElementById('zoomModal').style.display = "block";
+}
+
+function changeZoomSlide(dir) {
+    if (currentZoomImages.length <= 1) return;
+    currentZoomIndex = (currentZoomIndex + dir + currentZoomImages.length) % currentZoomImages.length;
+    updateZoomUI();
+}
+
+function updateZoomUI() {
+    const zoomedImg = document.getElementById('zoomedImg');
+    const zoomCounter = document.getElementById('zoomCounter');
+    
+    zoomedImg.src = currentZoomImages[currentZoomIndex];
+    zoomCounter.textContent = `${currentZoomIndex + 1} / ${currentZoomImages.length}`;
+}
+
 init();
+
+// PWA Logic
+let deferredPrompt;
+function setupPWA() {
+    // 1. Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW Registered'))
+                .catch(err => console.log('SW Registration Failed', err));
+        });
+    }
+
+    // 2. Handle Install Prompt
+    const installContainer = document.getElementById('installAppContainer');
+    const installBtn = document.getElementById('installAppBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        // Show the install button container
+        if (installContainer) installContainer.style.display = 'block';
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+            // Hide the install button
+            if (installContainer) installContainer.style.display = 'none';
+        });
+    }
+
+    // 3. Hide button if already installed
+    window.addEventListener('appinstalled', (evt) => {
+        console.log('App Installed Successfully');
+        if (installContainer) installContainer.style.display = 'none';
+    });
+}
