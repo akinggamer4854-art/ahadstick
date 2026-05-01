@@ -1051,6 +1051,15 @@ body {
     /* Backdrop for contain mode */
 }
 
+/* Hide reCAPTCHA badge */
+.grecaptcha-badge { 
+    visibility: hidden !important;
+}
+
+/* Custom Toast Animation */
+@keyframes toastIn { from { bottom: 50px; opacity: 0; } to { bottom: 100px; opacity: 1; } }
+@keyframes toastOut { from { bottom: 100px; opacity: 1; } to { bottom: 150px; opacity: 0; } }
+
 .media-slide {
     position: absolute;
     top: 0;

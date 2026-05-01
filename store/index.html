@@ -500,47 +500,38 @@
 
             <!-- Step 1: Identity -->
             <div id="authStep1">
-                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Enter your Mobile Number or
-                    Gmail to continue.</p>
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Enter your Mobile Number or Gmail to continue.</p>
                 <div class="input-group full">
                     <input type="text" id="authIdentity" placeholder="Phone Number or Email" style="padding: 15px;">
                 </div>
+                <!-- Invisible Recaptcha for Phone Auth -->
+                <div id="recaptcha-container"></div>
                 <button id="authNextBtn" class="confirm-btn" style="margin-top: 15px;">Get OTP</button>
             </div>
 
-            <!-- Step 2: OTP (Now comes immediately after Identity) -->
+            <!-- Step 2: OTP -->
             <div id="authStep2" style="display: none;">
-                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">We've sent a 4-digit code.
-                    Please enter it below.</p>
-                <div id="otpContainer" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                    <input type="number" class="otp-input" maxlength="1"
-                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
-                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
-                    <input type="number" class="otp-input" maxlength="1"
-                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
-                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
-                    <input type="number" class="otp-input" maxlength="1"
-                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
-                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
-                    <input type="number" class="otp-input" maxlength="1"
-                        oninput="if(this.value.length>1)this.value=this.value.slice(0,1)"
-                        style="width: 50px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">We've sent a 6-digit code. Please enter it below.</p>
+                <div id="otpContainer" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 20px;">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
+                    <input type="number" class="otp-input" maxlength="1" oninput="if(this.value.length>1)this.value=this.value.slice(0,1)" style="width: 45px; height: 50px; text-align: center; font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--gold-primary);">
                 </div>
                 <button id="verifyOtpBtn" class="confirm-btn">Verify OTP</button>
-                <p id="resendOtp"
-                    style="text-align: center; color: var(--gold-primary); font-size: 0.8rem; margin-top: 15px; cursor: pointer;">
-                    Resend OTP</p>
+                <p id="resendOtp" style="text-align: center; color: var(--gold-primary); font-size: 0.8rem; margin-top: 15px; cursor: pointer;">Resend OTP</p>
             </div>
 
-            <!-- Step 3: Name Registration (Only for new users after OTP) -->
+            <!-- Step 3: Name Registration -->
             <div id="authStep3" style="display: none;">
-                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Almost there! Please tell us
-                    your name.</p>
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Almost there! Please tell us your name.</p>
                 <div class="input-group full">
                     <label>Full Name</label>
                     <input type="text" id="authName" placeholder="Enter your name" style="padding: 15px;">
                 </div>
-                <button id="authSignupBtn" class="confirm-btn" style="margin-top: 15px;">Complete Join</button>
+                <button id="authSignupBtn" class="confirm-btn" style="margin-top: 15px;">Complete Joining</button>
             </div>
         </div>
     </div>
