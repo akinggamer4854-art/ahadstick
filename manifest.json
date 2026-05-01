@@ -1,0 +1,21 @@
+{
+  "name": "Richvibe Store",
+  "short_name": "Richvibe",
+  "description": "Premium Curated Masterpieces",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#D4AF37",
+  "icons": [
+    {
+      "src": "image.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "image.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
