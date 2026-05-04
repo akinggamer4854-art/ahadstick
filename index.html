@@ -65,6 +65,10 @@
 
     <!-- Hero Section -->
     <header class="hero">
+        <!-- Admin Quick Navigation (Only for Admin) -->
+        <div id="adminQuickNav" style="display: none; text-align: center; margin-bottom: 30px; position: relative; z-index: 100;">
+            <button id="adminScrollBottom" class="admin-scroll-btn" title="Go to Bottom">⬇️ Scroll to Bottom (Stats/Footer)</button>
+        </div>
         <div class="hero-content">
             <h2 class="hero-tagline">PICK THE RIGHT <span class="gold-gradient-text">STYLE</span></h2>
             <div class="hero-divider"></div>
@@ -94,6 +98,8 @@
                 <button class="cat-btn" data-cat="menclothes">MENS WEAR</button>
                 <button class="cat-btn" data-cat="ladyfootwear">LADIES FOOTWEAR</button>
                 <button class="cat-btn" data-cat="ladywatch">LADIES WATCHES</button>
+                <button class="cat-btn" data-cat="formals_loafers">FORMALS & LOAFERS</button>
+                <button class="cat-btn" data-cat="crocs">CROCS (M/F)</button>
                 <button id="sideWishlistBtn" class="cat-btn"
                     style="color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">❤️ MY WISHLIST</button>
             </div>
@@ -264,6 +270,8 @@
                     <li><a href="#" onclick="setCategory('menclothes'); return false;">Exclusive Mens Wear</a></li>
                     <li><a href="#" onclick="setCategory('ladyfootwear'); return false;">Ladies Footwear</a></li>
                     <li><a href="#" onclick="setCategory('ladywatch'); return false;">Ladies Watches</a></li>
+                    <li><a href="#" onclick="setCategory('formals_loafers'); return false;">Formals & Loafers</a></li>
+                    <li><a href="#" onclick="setCategory('crocs'); return false;">Crocs (Male/Female)</a></li>
                 </ul>
             </div>
 
@@ -300,6 +308,7 @@
             </div>
         </div>
         <div class="footer-bottom">
+            <button id="adminScrollTop" class="admin-scroll-btn" title="Go to Top" style="display: none; margin-bottom: 15px;">⬆️ Scroll Up</button>
             <p>&copy; 2026 Richvibe. Crafted for the Extraordinary.</p>
         </div>
     </footer>
@@ -472,6 +481,8 @@
                             <option value="menclothes">MEN CLOTHES</option>
                             <option value="ladyfootwear">LADIES FOOTWEAR</option>
                             <option value="ladywatch">LADIES WATCH</option>
+                            <option value="formals_loafers">FORMALS & LOAFERS</option>
+                            <option value="crocs">CROCS (M/F)</option>
                         </select>
                     </div>
                     <div class="input-group full">

@@ -286,15 +286,61 @@ function renderFilteredProducts(filtered) {
         const mrp = Math.round(p.price / (1 - (discountPercent / 100)));
 
         return `
-        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up">
+        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
+            ${(p.pinned && isAdminLoggedIn) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
+            
             <div class="carousel-container">
-                <div class="media-slide active">
-                    <video class="product-video" loop muted playsinline autoplay>
+                <!-- Slide 0: Video -->
+                <div class="media-slide active" data-index="0">
+                    <video class="product-video" loop muted playsinline>
                         <source src="${p.video}" type="video/mp4">
                     </video>
                 </div>
+                
+                <!-- Other Slides: Images -->
+                ${(p.images || []).map((img, idx) => `
+                    <div class="media-slide" data-index="${idx + 1}" onclick="openZoom('${p.id}', ${idx})" style="cursor: zoom-in;">
+                        <img src="${img}" class="product-img" loading="lazy">
+                    </div>
+                `).join('')}
+
+                <!-- Nav Buttons -->
+                <div class="carousel-nav">
+                    <div class="nav-arr" onclick="changeSlide('${p.id}', -1)">❮</div>
+                    <div class="nav-arr" onclick="changeSlide('${p.id}', 1)">❯</div>
+                </div>
+
                 <div class="video-overlay"></div>
             </div>
+
+            <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
+                ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
+            </div>
+
+            <div class="card-share-btn" onclick="shareProduct('${p.id}')" title="Share this masterpiece">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+            </div>
+
+            ${isAdminLoggedIn ? `
+                <div class="admin-controls" style="z-index: 40;">
+                    <button class="control-btn pin-btn" onclick="togglePin('${p.id}')" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
+                        ${p.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="control-btn edit-btn" onclick="openEditModal('${p.id}')" title="Edit Product">
+                        ✏️
+                    </button>
+                    <button class="control-btn delete-btn" onclick="deleteProduct('${p.id}')" title="Delete Product">
+                        🗑️
+                    </button>
+                </div>
+            ` : ''}
+
             <div class="product-info">
                 <h2 class="product-name">${p.name}</h2>
                 <div class="price-container">
@@ -302,12 +348,14 @@ function renderFilteredProducts(filtered) {
                     <span class="mrp-price">₹${mrp.toLocaleString()}</span>
                     <span class="discount-badge">${discountPercent}% OFF</span>
                 </div>
-                <p class="product-desc" id="desc-${p.id}">${p.description || 'Premium quality masterpiece.'}</p>
-                <button class="read-more-btn" onclick="toggleDescription(this, '${p.id}')">Read More</button>
+                <div class="desc-wrapper">
+                    <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
+                    ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
+                </div>
                 <div class="actions">
                     <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
                     ${cart.includes(String(p.id))
-                ? `<button class="btn btn-cart" disabled>IN BAG</button>`
+                ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
                 : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
             }
                 </div>
@@ -430,10 +478,18 @@ function updateAdminStats() {
     const container = document.getElementById('adminStatsContainer');
     if (!container) return;
 
+    const quickNav = document.getElementById('adminQuickNav');
+    const scrollTop = document.getElementById('adminScrollTop');
+
     if (!isAdminLoggedIn) {
         container.style.display = 'none';
+        if (quickNav) quickNav.style.display = 'none';
+        if (scrollTop) scrollTop.style.display = 'none';
         return;
     }
+
+    if (quickNav) quickNav.style.display = 'block';
+    if (scrollTop) scrollTop.style.display = 'inline-flex';
 
     const counts = {
         total: products.length,
@@ -442,7 +498,9 @@ function updateAdminStats() {
         goggles: 0,
         menclothes: 0,
         ladyfootwear: 0,
-        ladywatch: 0
+        ladywatch: 0,
+        formals_loafers: 0,
+        crocs: 0
     };
 
     products.forEach(p => {
@@ -460,6 +518,8 @@ function updateAdminStats() {
             <div class="admin-stat-item"><span>MENS WEAR</span> <span>${counts.menclothes}</span></div>
             <div class="admin-stat-item"><span>LADIES FOOTWEAR</span> <span>${counts.ladyfootwear}</span></div>
             <div class="admin-stat-item"><span>LADIES WATCHES</span> <span>${counts.ladywatch}</span></div>
+            <div class="admin-stat-item"><span>FORMALS & LOAFERS</span> <span>${counts.formals_loafers}</span></div>
+            <div class="admin-stat-item"><span>CROCS (M/F)</span> <span>${counts.crocs}</span></div>
             <div class="admin-stat-item total"><span>TOTAL PRODUCTS</span> <span>${counts.total}</span></div>
         </div>
     `;
@@ -525,12 +585,6 @@ async function renderProducts(append = false) {
     });
 
     if (sortedProducts.length === 0 && products.length > 0) {
-        // If we are already showing products, NEVER show the empty message 
-        // unless the user explicitly clicked a category.
-        if (productFeed.querySelector('.product-item')) {
-            isRendering = false;
-            return;
-        }
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
         isRendering = false;
         return;
@@ -997,6 +1051,22 @@ function openOrderModal(id) {
 }
 
 function setupEventListeners() {
+    // Admin Scroll Buttons
+    const scrollBottom = document.getElementById('adminScrollBottom');
+    const scrollTop = document.getElementById('adminScrollTop');
+    
+    if (scrollBottom) {
+        scrollBottom.onclick = () => {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        };
+    }
+    
+    if (scrollTop) {
+        scrollTop.onclick = () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+    }
+
     // Menu Toggle
     const menuToggle = document.getElementById('menuToggle');
     const sideMenu = document.getElementById('sideMenu');
@@ -1025,6 +1095,7 @@ function setupEventListeners() {
             btn.classList.add('active');
             currentCategory = btn.getAttribute('data-cat');
             displayedCount = 20; // Reset for infinite scroll
+            productFeed.innerHTML = ""; // Clear feed immediately
             renderProducts();
             if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
         });

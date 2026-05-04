@@ -1958,3 +1958,50 @@ body {
     margin-top: 5px;
     font-size: 1rem;
 }
+
+/* Admin Scroll Buttons */
+.admin-scroll-btn {
+    background: var(--gold-gradient);
+    color: #000;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: var(--gold-glow);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.admin-scroll-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+
+.admin-scroll-btn:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+    .admin-scroll-btn {
+        padding: 6px 12px;
+        font-size: 0.7rem;
+    }
+
+    #adminQuickNav {
+        margin-top: 60px !important;
+        margin-bottom: 20px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #adminQuickNav {
+        margin-top: 70px !important;
+        margin-bottom: 20px !important;
+    }
+}
