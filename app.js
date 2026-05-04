@@ -388,6 +388,7 @@ function setCategory(cat) {
             btn.classList.remove('active');
         }
     });
+    displayedCount = 20; 
     // Force a fresh render because user explicitly clicked a category
     productFeed.innerHTML = ""; 
     renderProducts();
@@ -532,59 +533,63 @@ async function renderProducts(append = false) {
     if (isRendering && !append) return;
     isRendering = true;
 
-    let filtered = products;
+    // 1. Basic Filtering (Category & Price)
+    let filtered = products.filter(p => {
+        const matchesCategory = (currentCategory === 'all' || p.category === currentCategory);
+        let matchesPrice = true;
+        if (currentPriceFilter !== 'all') {
+            if (currentPriceFilter === 'above_4999') {
+                matchesPrice = p.price > 4999;
+            } else {
+                matchesPrice = p.price <= parseInt(currentPriceFilter);
+            }
+        }
+        return matchesCategory && matchesPrice;
+    });
 
-    // Handle Deep Linking (?p=ID)
+    // Sort function for reuse
+    const sortProducts = (list) => {
+        return [...list].sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            const timeA = a.timestamp ? (a.timestamp.seconds || a.timestamp || 0) : 0;
+            const timeB = b.timestamp ? (b.timestamp.seconds || b.timestamp || 0) : 0;
+            return timeB - timeA;
+        });
+    };
+
+    // 2. Handle Deep Linking (?p=ID)
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('p');
+    
+    let finalProducts = [];
     
     if (productId && !append) {
         const sharedIdx = products.findIndex(p => String(p.id) === String(productId));
         if (sharedIdx > -1) {
             const sharedProduct = { ...products[sharedIdx], isShared: true };
-            const otherProducts = products.filter((_, idx) => idx !== sharedIdx);
             
-            // Sort others as usual
-            const sortedOthers = otherProducts.sort((a, b) => {
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                const timeA = a.timestamp ? (a.timestamp.seconds || a.timestamp) : a.id;
-                const timeB = b.timestamp ? (b.timestamp.seconds || b.timestamp) : b.id;
-                return timeB - timeA;
-            });
-            
-            filtered = [sharedProduct, ...sortedOthers];
+            // Shared product matches if we are on 'all' OR it matches the category
+            const matchesCategory = currentCategory === 'all' || sharedProduct.category === currentCategory;
+            const matchesPrice = currentPriceFilter === 'all' || 
+                (currentPriceFilter === 'above_4999' ? sharedProduct.price > 4999 : sharedProduct.price <= parseInt(currentPriceFilter));
+
+            if (matchesCategory && matchesPrice) {
+                // Shared product matches current filter, show it first
+                const others = filtered.filter(p => String(p.id) !== String(productId));
+                finalProducts = [sharedProduct, ...sortProducts(others)];
+            } else {
+                // Shared product doesn't match current filter, just show filtered list
+                finalProducts = sortProducts(filtered);
+            }
         } else {
-            // Product not found, filter others as usual
-            filtered = currentCategory === 'all'
-                ? [...products]
-                : products.filter(p => p.category === currentCategory);
+            finalProducts = sortProducts(filtered);
         }
     } else {
-        // Normal filtering
-        filtered = currentCategory === 'all'
-            ? [...products]
-            : products.filter(p => p.category === currentCategory);
-
-        if (currentPriceFilter !== 'all') {
-            if (currentPriceFilter === 'above_4999') {
-                filtered = filtered.filter(p => p.price > 4999);
-            } else {
-                const maxPrice = parseInt(currentPriceFilter);
-                filtered = filtered.filter(p => p.price <= maxPrice);
-            }
-        }
+        finalProducts = sortProducts(filtered);
     }
 
-    const sortedProducts = productId && !append ? filtered : [...filtered].sort((a, b) => {
-        if (a.pinned && !b.pinned) return -1;
-        if (!a.pinned && b.pinned) return 1;
-        const timeA = a.timestamp ? (a.timestamp.seconds || a.timestamp) : a.id;
-        const timeB = b.timestamp ? (b.timestamp.seconds || b.timestamp) : b.id;
-        return timeB - timeA;
-    });
-
-    if (sortedProducts.length === 0 && products.length > 0) {
+    if (finalProducts.length === 0 && products.length > 0) {
         productFeed.innerHTML = `<div class="loader">Our vault is currently empty for this category.</div>`;
         isRendering = false;
         return;
@@ -605,7 +610,7 @@ async function renderProducts(append = false) {
         `).join('');
     }
 
-    const batch = filtered.slice(append ? displayedCount - 20 : 0, displayedCount);
+    const batch = finalProducts.slice(append ? displayedCount - 20 : 0, displayedCount);
     const html = batch.map(p => {
         let seed = 0;
         for (let i = 0; i < String(p.id).length; i++) {
@@ -1098,6 +1103,7 @@ function setupEventListeners() {
             productFeed.innerHTML = ""; // Clear feed immediately
             renderProducts();
             if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
+            window.scrollTo({ top: document.getElementById('productFeed').offsetTop - 100, behavior: 'smooth' });
         });
     });
 
