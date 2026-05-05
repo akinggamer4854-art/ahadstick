@@ -806,6 +806,16 @@ body {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+@media (max-width: 480px) {
+    .product-feed {
+        padding: 15px;
+        gap: 15px;
+    }
+    .product-item {
+        height: 600px;
+    }
+}
+
 .product-item:hover {
     transform: translateY(-8px);
     border-color: var(--gold-primary);
@@ -899,10 +909,12 @@ body {
 }
 
 .product-price {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--gold-primary);
-    text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #FFD700; /* Vibrant Premium Gold */
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    letter-spacing: 0.5px;
+    font-family: var(--font-body);
 }
 
 .mrp-price {
@@ -2004,6 +2016,11 @@ body {
     #adminQuickNav {
         margin-top: 70px !important;
         margin-bottom: 20px !important;
+    }
+    .product-price {
+        font-size: 1.8rem;
+        font-weight: 900;
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
     }
 }
 
