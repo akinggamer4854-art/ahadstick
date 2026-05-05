@@ -16,6 +16,7 @@
     --font-body: 'Outfit', sans-serif;
     --theme-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --nav-bg: rgba(5, 5, 5, 0.8);
+    --premium-glow: 0 0 20px rgba(212, 175, 55, 0.4);
 }
 
 /* Premium Custom Scrollbar */
@@ -2005,3 +2006,69 @@ body {
         margin-bottom: 20px !important;
     }
 }
+
+/* Enhanced Load More Button */
+#loadMoreBtn {
+    background: var(--gold-gradient);
+    color: #000;
+    border: none;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--premium-glow);
+    position: relative;
+    overflow: hidden;
+    animation: pulseGlow 2s infinite;
+    cursor: pointer;
+}
+
+#loadMoreBtn::after {
+    content: ' ✨';
+}
+
+#loadMoreBtn:hover {
+    transform: scale(1.08) translateY(-5px);
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.6);
+    filter: brightness(1.1);
+}
+
+#loadMoreBtn:active {
+    transform: scale(0.98);
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+    50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.7); }
+    100% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+}
+
+/* Performance: Skeleton Loaders */
+.skeleton-card {
+    background: var(--glass);
+    border-radius: var(--radius-lg);
+    height: 550px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+}
+
+.skeleton-media {
+    height: 400px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton-line {
+    height: 20px;
+    margin: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+}
+
+.skeleton-line.short { width: 60%; }
+.skeleton-line.price { width: 40%; height: 30px; background: rgba(212, 175, 55, 0.1); }

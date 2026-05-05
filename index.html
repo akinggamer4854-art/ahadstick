@@ -32,7 +32,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function () {
-            emailjs.init("M9_5LIzzv8jTjR3Sz");
+            emailjs.init("DVIQqZ6yfy4GDm58z");
         })();
     </script>
 </head>
@@ -170,6 +170,13 @@
             </div>
         </div>
     </main>
+    
+    <!-- Load More Button -->
+    <div id="loadMoreContainer" style="display: none; text-align: center; margin: 40px 0 60px 0;">
+        <button id="loadMoreBtn" class="confirm-btn" style="width: auto; padding: 15px 40px; font-size: 1rem; letter-spacing: 2px;">
+            EXPLORE MORE COLLECTIONS
+        </button>
+    </div>
 
     <!-- Trust Badges Section -->
     <section class="trust-badges">
@@ -525,10 +532,9 @@
 
             <!-- Step 1: Identity -->
             <div id="authStep1">
-                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Enter your Mobile Number or
-                    Gmail to continue.</p>
+                <p style="color: var(--text-gray); margin-bottom: 15px; font-size: 0.9rem;">Enter your Gmail address to receive a secure OTP code.</p>
                 <div class="input-group full">
-                    <input type="text" id="authIdentity" placeholder="Phone Number or Email" style="padding: 15px;">
+                    <input type="text" id="authIdentity" placeholder="example@gmail.com" style="padding: 15px;">
                 </div>
                 <!-- Invisible Recaptcha for Phone Auth -->
                 <div id="recaptcha-container"></div>

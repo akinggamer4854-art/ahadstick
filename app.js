@@ -292,7 +292,7 @@ function renderFilteredProducts(filtered) {
             <div class="carousel-container">
                 <!-- Slide 0: Video -->
                 <div class="media-slide active" data-index="0">
-                    <video class="product-video" loop muted playsinline>
+                    <video class="product-video" loop muted playsinline preload="none">
                         <source src="${p.video}" type="video/mp4">
                     </video>
                 </div>
@@ -628,7 +628,7 @@ async function renderProducts(append = false) {
             <div class="carousel-container">
                 <!-- Slide 0: Video -->
                 <div class="media-slide active" data-index="0">
-                    <video class="product-video" loop muted playsinline>
+                    <video class="product-video" loop muted playsinline preload="none">
                         <source src="${p.video}" type="video/mp4">
                     </video>
                 </div>
@@ -710,7 +710,19 @@ async function renderProducts(append = false) {
     }
 
     setupScrollReveal();
+    updateLoadMoreButton(finalProducts.length);
     isRendering = false;
+}
+
+function updateLoadMoreButton(totalFiltered) {
+    const container = document.getElementById('loadMoreContainer');
+    if (container) {
+        if (displayedCount < totalFiltered) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
 }
 
 function setupScrollReveal() {
@@ -743,6 +755,29 @@ function setupScrollReveal() {
         observer.observe(item);
     });
 }
+
+// --- LOAD MORE LOGIC ---
+function setupLoadMore() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.onclick = () => {
+            const originalText = loadMoreBtn.textContent;
+            loadMoreBtn.textContent = 'REVEALING...';
+            loadMoreBtn.disabled = true;
+
+            setTimeout(() => {
+                displayedCount += 20;
+                renderProducts(true);
+                loadMoreBtn.textContent = originalText;
+                loadMoreBtn.disabled = false;
+                
+                // Optional: Smooth scroll a bit further down to show new items
+                window.scrollBy({ top: 300, behavior: 'smooth' });
+            }, 600);
+        };
+    }
+}
+// -----------------------------
 
 async function togglePin(id) {
     try {
@@ -1168,6 +1203,8 @@ function setupEventListeners() {
         };
     }
 
+    setupLoadMore();
+
     adminBtn.onclick = () => {
         adminModal.style.display = "block";
         if (isAdminLoggedIn) {
@@ -1407,24 +1444,7 @@ function setupEventListeners() {
 
             if (isFirebaseAvailable && isFirebaseConfigured) {
                 await db.collection('products').add(pData);
-                
-                // Automated Email Notification
-                try {
-                    const emailParams = {
-                        product_name: pData.name,
-                        price: pData.price,
-                        description: pData.description,
-                        category: pData.category,
-                        timestamp: new Date().toLocaleString()
-                    };
-                    
-                    console.log("Sending Email Notification...", emailParams);
-                    
-                    await emailjs.send("service_1ub0zen", "template_up62yvq", emailParams, "M9_5LIzzv8jTjR3Sz");
-                    console.log("Email sent successfully!");
-                } catch (emailErr) {
-                    console.error("EmailJS Error:", emailErr);
-                }
+                console.log("Masterpiece Live via Cloudinary!");
             } else {
                 throw new Error("Database not connected.");
             }
@@ -1546,9 +1566,9 @@ function setupPWA() {
 let authState = {
     identity: '',
     name: '',
-    isNew: false
+    isNew: false,
+    otp: null
 };
-let confirmationResult = null;
 let recaptchaVerifier = null;
 
 function getUserDocId(identity) {
@@ -1581,45 +1601,47 @@ function setupUserAuth() {
         };
         if (logoutBtn) logoutBtn.onclick = () => logoutUser();
 
-        // Step 1: Send OTP
+        // Step 1: Send OTP via EmailJS
         if (authNextBtn) authNextBtn.onclick = async () => {
-            const identity = document.getElementById('authIdentity').value.trim();
-            if (!identity) return showNotification('Please enter Phone or Email');
+            const identity = document.getElementById('authIdentity').value.trim().toLowerCase();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             
-            authNextBtn.textContent = 'Sending...';
+            if (!identity || !emailRegex.test(identity)) {
+                return showNotification('Please enter a valid Gmail/Email address');
+            }
+            
+            authNextBtn.textContent = 'Generating OTP...';
             authNextBtn.disabled = true;
 
             try {
                 authState.identity = identity;
-                const isEmail = identity.includes('@');
+                
+                // 1. Generate 6-digit OTP
+                const generatedOtp = Math.floor(100000 + Math.random() * 900000);
+                authState.otp = generatedOtp;
 
-                if (isEmail) {
-                    showNotification('OTP sent to your email.');
-                    goToStep(2);
-                } else {
-                    if (!recaptchaVerifier) {
-                        recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                            'size': 'invisible'
-                        });
-                    }
-                    
-                    let phone = identity.replace(/\D/g, '');
-                    if (phone.length === 10) phone = '+91' + phone;
-                    else if (!phone.startsWith('+')) phone = '+' + phone;
+                // 2. Send OTP via EmailJS
+                // Template: template_otp (User needs to create this in EmailJS)
+                const emailParams = {
+                    to_email: identity,
+                    otp_code: generatedOtp,
+                    store_name: "Richvibe",
+                    reply_to: "richvibe30@gmail.com"
+                };
 
-                    confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier);
-                    showNotification('Real SMS OTP sent!');
-                    goToStep(2);
-                }
+                console.log("Sending OTP to:", identity);
+                
+                await emailjs.send("service_wortnsa", "template_irpjg8d", {
+                    to_email: identity,
+                    subject: "Richvibe - Your Verification Code",
+                    message_body: `Hello! Your 6-digit verification code for Richvibe is: ${generatedOtp}. Please do not share this code with anyone.`
+                });
+
+                showNotification('✨ OTP sent to your Gmail!');
+                goToStep(2);
             } catch (err) {
-                console.error("Firebase Auth Error:", err);
-                if (err.code === 'auth/billing-not-enabled' || err.message.includes('billing')) {
-                    alert("❌ Firebase Billing Error: Please upgrade to Blaze Plan in Firebase Console to send real SMS. (It has a free tier but requires a card).");
-                } else if (err.code === 'auth/quota-exceeded') {
-                    alert("❌ SMS Quota Exceeded: You have sent too many OTPs today. Please try again tomorrow.");
-                } else {
-                    alert("Error: " + err.message);
-                }
+                console.error("EmailJS Auth Error:", err);
+                showNotification('Failed to send OTP. Please check your internet.');
             } finally {
                 authNextBtn.textContent = 'Get OTP';
                 authNextBtn.disabled = false;
@@ -1630,29 +1652,31 @@ function setupUserAuth() {
         if (verifyOtpBtn) verifyOtpBtn.onclick = async () => {
             const inputs = document.querySelectorAll('.otp-input');
             const code = Array.from(inputs).map(i => i.value).join('');
+            
             if (code.length < 6) return showNotification('Please enter 6-digit code');
 
             verifyOtpBtn.textContent = 'Verifying...';
             verifyOtpBtn.disabled = true;
 
             try {
-                if (confirmationResult) {
-                    await confirmationResult.confirm(code);
-                }
-                
-                const userRef = db.collection('users').doc(getUserDocId(authState.identity));
-                const doc = await userRef.get();
+                // Check if OTP matches
+                if (String(code) === String(authState.otp)) {
+                    const userRef = db.collection('users').doc(getUserDocId(authState.identity));
+                    const doc = await userRef.get();
 
-                if (doc.exists) {
-                    authState.isNew = false;
-                    authState.name = doc.data().name;
-                    completeLogin();
+                    if (doc.exists) {
+                        authState.isNew = false;
+                        authState.name = doc.data().name;
+                        completeLogin();
+                    } else {
+                        authState.isNew = true;
+                        goToStep(3);
+                    }
                 } else {
-                    authState.isNew = true;
-                    goToStep(3);
+                    throw new Error("Invalid OTP Code");
                 }
             } catch (err) {
-                alert("Invalid OTP or Session Expired.");
+                showNotification(err.message || "Verification Failed.");
             } finally {
                 verifyOtpBtn.textContent = 'Verify OTP';
                 verifyOtpBtn.disabled = false;
@@ -1731,12 +1755,21 @@ async function completeLogin() {
     };
     
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('initialSyncDone', 'true'); // Mark initial sync as done
+    localStorage.setItem('initialSyncDone', 'true'); 
     updateAuthUI(true);
     const modal = document.getElementById('authModal');
     if (modal) modal.style.display = 'none';
-    showNotification(`Welcome, ${authState.name}!`);
+    showNotification(`Welcome back, ${authState.name}!`);
     
+    // Notify Admin about Successful Login (Sent to richvibe30@gmail.com)
+    try {
+        await emailjs.send("service_wortnsa", "template_irpjg8d", {
+            to_email: "richvibe30@gmail.com",
+            subject: "New Customer Login: " + authState.name,
+            message_body: `A customer has just logged into Richvibe.\n\nName: ${authState.name}\nEmail: ${authState.identity}\nStatus: ${authState.isNew ? 'New Registration' : 'Returning Customer'}\nTime: ${new Date().toLocaleString()}`
+        });
+    } catch (e) { console.warn("Admin notification failed", e); }
+
     syncUserData();
     renderProducts();
     renderCart();
