@@ -721,6 +721,7 @@ body {
     transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border-right: 1px solid var(--glass-border);
     box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
+    overflow-x: hidden;
 }
 
 .side-menu.open {
@@ -732,6 +733,22 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-primary) transparent;
+}
+
+.side-menu-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.side-menu-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.side-menu-content::-webkit-scrollbar-thumb {
+    background: var(--gold-gradient);
+    border-radius: 10px;
 }
 
 .side-menu-header {
