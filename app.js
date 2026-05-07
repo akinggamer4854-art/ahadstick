@@ -153,8 +153,8 @@ function shareStore() {
     const msg = `Hello! 🤝
 Aapka pasandida shopping destination Ahad Stick Store ab aur bhi behtareen collection ke saath taiyaar hai! ✨
 Kya aap bhi Master aur First Copy products ke deewane hain? Hamare paas aapke liye sab kuch hai:
-👔 For Men: Latest Watches, Stylish Goggles, Trendy Clothes aur Shoes ka dhamakedaar collection.
-👗 For Ladies: Premium Watches aur har tarah ke stylish Footwear/Shoes jo aapke har look ko perfect banaye.
+👔 For Men: Latest Watches, Stylish Goggles, Trendy Clothes, Shoes, Belts aur Wallets ka collection.
+👗 For Ladies: Premium Watches, Stylish Footwear aur Designer Purses jo aapke look ko perfect banaye.
 Kam daam mein wahi premium quality aur wahi look! 💯
 Abhi checkout karein hamari website:
 🌐 https://ahadstickstoree.netlify.app
@@ -257,115 +257,26 @@ function toggleSearch() {
 
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
+
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = products.filter(p =>
-                p.name.toLowerCase().includes(query) ||
-                (p.description && p.description.toLowerCase().includes(query)) ||
-                p.category.toLowerCase().includes(query)
-            );
-            renderFilteredProducts(filtered);
+            const query = e.target.value.toLowerCase().trim();
+            
+            // We reset displayedCount when searching/typing to show fresh results
+            displayedCount = 20;
+            renderProducts();
+        });
+
+        // Mobile Enter Key support
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchInput.blur(); // Hide keyboard on mobile
+            }
         });
     }
 }
 
-function renderFilteredProducts(filtered) {
-    const productFeed = document.getElementById('productFeed');
-    if (filtered.length === 0) {
-        productFeed.innerHTML = `<div class="loader">No masterpieces found matching your search.</div>`;
-        return;
-    }
-
-    const html = filtered.map(p => {
-        let seed = 0;
-        for (let i = 0; i < String(p.id).length; i++) {
-            seed += String(p.id).charCodeAt(i);
-        }
-        const discountPercent = 20 + (seed % 21);
-        const mrp = Math.round(p.price / (1 - (discountPercent / 100)));
-
-        return `
-        <div class="product-item ${p.pinned ? 'is-pinned' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
-            ${(p.pinned && isAdminLoggedIn) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
-            
-            <div class="carousel-container">
-                <!-- Slide 0: Video -->
-                <div class="media-slide active" data-index="0">
-                    <video class="product-video" loop muted playsinline preload="none">
-                        <source src="${p.video}" type="video/mp4">
-                    </video>
-                </div>
-                
-                <!-- Other Slides: Images -->
-                ${(p.images || []).map((img, idx) => `
-                    <div class="media-slide" data-index="${idx + 1}" onclick="openZoom('${p.id}', ${idx})" style="cursor: zoom-in;">
-                        <img src="${img}" class="product-img" loading="lazy">
-                    </div>
-                `).join('')}
-
-                <!-- Nav Buttons -->
-                <div class="carousel-nav">
-                    <div class="nav-arr" onclick="changeSlide('${p.id}', -1)">❮</div>
-                    <div class="nav-arr" onclick="changeSlide('${p.id}', 1)">❯</div>
-                </div>
-
-                <div class="video-overlay"></div>
-            </div>
-
-            <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
-                ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
-            </div>
-
-            <div class="card-share-btn" onclick="shareProduct('${p.id}')" title="Share this masterpiece">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"></circle>
-                    <circle cx="6" cy="12" r="3"></circle>
-                    <circle cx="18" cy="19" r="3"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-            </div>
-
-            ${isAdminLoggedIn ? `
-                <div class="admin-controls" style="z-index: 40;">
-                    <button class="control-btn pin-btn" onclick="togglePin('${p.id}')" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
-                        ${p.pinned ? '📍' : '📌'}
-                    </button>
-                    <button class="control-btn edit-btn" onclick="openEditModal('${p.id}')" title="Edit Product">
-                        ✏️
-                    </button>
-                    <button class="control-btn delete-btn" onclick="deleteProduct('${p.id}')" title="Delete Product">
-                        🗑️
-                    </button>
-                </div>
-            ` : ''}
-
-            <div class="product-info">
-                <h2 class="product-name">${p.name}</h2>
-                <div class="price-container">
-                    <span class="product-price">₹${p.price.toLocaleString()}</span>
-                    <span class="mrp-price">₹${mrp.toLocaleString()}</span>
-                    <span class="discount-badge">${discountPercent}% OFF</span>
-                </div>
-                <div class="desc-wrapper">
-                    <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
-                    ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
-                </div>
-                <div class="actions">
-                    <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
-                    ${cart.includes(String(p.id))
-                ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
-                : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
-            }
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-
-    productFeed.innerHTML = html;
-    setupScrollReveal();
-}
+// Removed redundant renderFilteredProducts as it's now handled by renderProducts
 
 function toggleDescription(btn, id) {
     const desc = document.getElementById(`desc-${id}`);
@@ -388,8 +299,11 @@ function setCategory(cat) {
             btn.classList.remove('active');
         }
     });
+    // Clear search input when changing categories
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = "";
+
     displayedCount = 20; 
-    // Force a fresh render because user explicitly clicked a category
     productFeed.innerHTML = ""; 
     renderProducts();
     window.scrollTo({ top: document.getElementById('productFeed').offsetTop - 100, behavior: 'smooth' });
@@ -501,7 +415,9 @@ function updateAdminStats() {
         ladyfootwear: 0,
         ladywatch: 0,
         formals_loafers: 0,
-        crocs: 0
+        crocs: 0,
+        ladies_purse: 0,
+        belt_wallet: 0
     };
 
     products.forEach(p => {
@@ -521,6 +437,8 @@ function updateAdminStats() {
             <div class="admin-stat-item"><span>LADIES WATCHES</span> <span>${counts.ladywatch}</span></div>
             <div class="admin-stat-item"><span>FORMALS & LOAFERS</span> <span>${counts.formals_loafers}</span></div>
             <div class="admin-stat-item"><span>CROCS (M/F)</span> <span>${counts.crocs}</span></div>
+            <div class="admin-stat-item"><span>LADIES PURSE</span> <span>${counts.ladies_purse}</span></div>
+            <div class="admin-stat-item"><span>BELT & WALLET</span> <span>${counts.belt_wallet}</span></div>
             <div class="admin-stat-item total"><span>TOTAL PRODUCTS</span> <span>${counts.total}</span></div>
         </div>
     `;
@@ -533,9 +451,17 @@ async function renderProducts(append = false) {
     if (isRendering && !append) return;
     isRendering = true;
 
-    // 1. Basic Filtering (Category & Price)
+    // 1. Basic Filtering (Category, Price & Search)
     let filtered = products.filter(p => {
         const matchesCategory = (currentCategory === 'all' || p.category === currentCategory);
+        
+        // Search Filter
+        const searchInput = document.getElementById('searchInput');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const matchesSearch = query === "" || 
+                             p.name.toLowerCase().includes(query) || 
+                             (p.description && p.description.toLowerCase().includes(query));
+
         let matchesPrice = true;
         if (currentPriceFilter !== 'all') {
             if (currentPriceFilter === 'above_4999') {
@@ -544,7 +470,7 @@ async function renderProducts(append = false) {
                 matchesPrice = p.price <= parseInt(currentPriceFilter);
             }
         }
-        return matchesCategory && matchesPrice;
+        return matchesCategory && matchesPrice && matchesSearch;
     });
 
     // Sort function for reuse
@@ -1135,6 +1061,11 @@ function setupEventListeners() {
             btn.classList.add('active');
             currentCategory = btn.getAttribute('data-cat');
             displayedCount = 20; // Reset for infinite scroll
+            
+            // Clear search input when switching categories
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = "";
+
             productFeed.innerHTML = ""; // Clear feed immediately
             renderProducts();
             if (sideMenu) sideMenu.classList.remove('open'); // Close menu on select
