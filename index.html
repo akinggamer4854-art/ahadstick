@@ -49,8 +49,11 @@
         </a>
 
         <div class="search-container" id="searchContainer">
-            <span class="menu-icon" id="menuToggle"
-                style="margin-right: 10px; cursor: pointer; font-size: 1.4rem; color: var(--gold-primary); display: flex; align-items: center;">☰</span>
+            <div style="position: relative; display: flex; align-items: center;">
+                <span class="menu-icon" id="menuToggle"
+                    style="margin-right: 10px; cursor: pointer; font-size: 1.4rem; color: var(--gold-primary); display: flex; align-items: center;">☰</span>
+                <span class="menu-hint" id="menuHint">Click Here For More</span>
+            </div>
             <input type="text" id="searchInput" placeholder="Find your perfect style...">
             <span class="search-icon">🔍</span>
         </div>
@@ -432,6 +435,16 @@
                     <input type="number" id="editPrice" required>
                 </div>
                 <div class="input-group full">
+                    <label>Product Badge / Tag</label>
+                    <select id="editBadge" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
+                        <option value="none" style="color: black;">None</option>
+                        <option value="hot" style="color: black;">🔥 Hot Selling</option>
+                        <option value="limited" style="color: black;">⏳ Limited Stock</option>
+                        <option value="new" style="color: black;">✨ New Arrival</option>
+                        <option value="premium" style="color: black;">💎 Premium Quality</option>
+                    </select>
+                </div>
+                <div class="input-group full">
                     <label>Masterpiece Description</label>
                     <textarea id="editDesc" rows="4" required></textarea>
                 </div>
@@ -474,9 +487,16 @@
                     <h2>Curation Studio</h2>
                     <span class="closeAdminProduct">&times;</span>
                 </div>
-                <p style="color: var(--text-gray); margin-bottom: 20px; font-size: 0.9rem;">Add a new masterpiece to the
-                    collection.</p>
-                <form id="productForm">
+                
+                <div class="admin-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="admin-tab" id="tabUploadBtn" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--gold-primary); background: var(--gold-gradient); color: #000; font-weight: bold; cursor: pointer;">Upload Product</button>
+                    <button class="admin-tab" id="tabInquiriesBtn" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-white); font-weight: bold; cursor: pointer; position: relative;">Inquiries <span id="inquiryBadge" style="position: absolute; top: -8px; right: -8px; background: #ff4d4d; color: white; border-radius: 50%; padding: 3px 8px; font-size: 0.75rem; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: none;">0</span></button>
+                </div>
+
+                <!-- Product Upload Tab -->
+                <div id="tabUpload">
+                    <p style="color: var(--text-gray); margin-bottom: 20px; font-size: 0.9rem;">Add a new masterpiece to the collection.</p>
+                    <form id="productForm">
                     <div class="input-group">
                         <label>Masterpiece Name</label>
                         <input type="text" id="pName" placeholder="e.g. Rolex Submariner" required>
@@ -504,6 +524,16 @@
                             <option value="belt_wallet">BELT & WALLET</option>
                         </select>
                     </div>
+                    <div class="input-group">
+                        <label>Product Badge / Tag</label>
+                        <select id="pBadge">
+                            <option value="none">None</option>
+                            <option value="hot">🔥 Hot Selling</option>
+                            <option value="limited">⏳ Limited Stock</option>
+                            <option value="new">✨ New Arrival</option>
+                            <option value="premium">💎 Premium Quality</option>
+                        </select>
+                    </div>
                     <div class="input-group full">
                         <label>Cinematic Video (Upload Masterpiece)</label>
                         <input type="file" id="pVideoFile" accept="video/*" required>
@@ -520,7 +550,60 @@
                         <div class="input-group"><input type="file" class="p-img-slot" accept="image/*"></div>
                     </div>
                     <button type="submit" id="uploadBtn" class="confirm-btn">Add to Gallery</button>
-                </form>
+                    </form>
+                </div>
+
+                <!-- Inquiries CRM Tab -->
+                <div id="tabInquiries" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: var(--gold-primary);">Follow-ups & Inquiries</h3>
+                        <button id="addManualInquiryBtn" style="background: var(--gold-gradient); color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;">+ Add Manual</button>
+                    </div>
+
+                    <!-- Manual Inquiry Form -->
+                    <form id="manualInquiryForm" style="display: none; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--glass-border);">
+                        <div class="input-group full">
+                            <label>Customer Name</label>
+                            <input type="text" id="inqName" required>
+                        </div>
+                        <div class="input-group full">
+                            <label>WhatsApp Number</label>
+                            <input type="text" id="inqPhone" required>
+                        </div>
+                        <div class="input-group full">
+                            <label>Product / Link / Description</label>
+                            <input type="text" id="inqProduct" required>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div class="input-group" style="flex: 1; min-width: 120px;">
+                                <label>Source</label>
+                                <select id="inqSource" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
+                                    <option value="Instagram" style="color: black;">Instagram</option>
+                                    <option value="Facebook" style="color: black;">Facebook</option>
+                                    <option value="Direct" style="color: black;">Direct/WhatsApp</option>
+                                    <option value="Website" style="color: black;">Website</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="flex: 1; min-width: 120px;">
+                                <label>Follow-up Date</label>
+                                <input type="date" id="inqDate" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px; color-scheme: dark;">
+                            </div>
+                        </div>
+                        <button type="submit" class="confirm-btn" style="padding: 10px; margin-top: 10px;">Save Inquiry</button>
+                    </form>
+
+                    <!-- Due Today Section -->
+                    <div id="dueTodaySection" style="margin-bottom: 20px; display: none;">
+                        <h4 style="color: #ff4d4d; border-bottom: 1px solid #ff4d4d; padding-bottom: 5px; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">🚨 DUE TODAY</h4>
+                        <div id="dueTodayList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    </div>
+
+                    <!-- All Pending Inquiries -->
+                    <div>
+                        <h4 style="color: var(--gold-primary); border-bottom: 1px solid var(--gold-primary); padding-bottom: 5px; margin-bottom: 10px;">ALL PENDING</h4>
+                        <div id="allInquiriesList" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -612,6 +695,72 @@
         <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
             <img id="zoomedImg" src=""
                 style="max-width: 95%; max-height: 90%; object-fit: contain; border: 1px solid var(--gold-primary); box-shadow: var(--gold-glow);">
+        </div>
+    </div>
+
+    <!-- Global Live Viewers -->
+    <div id="globalViewers" class="global-viewers">
+        <span class="pulse-eye">👁️</span> <span id="viewersCount">0</span> Active Now
+    </div>
+
+    <!-- Welcome Offer Popup -->
+    <div id="welcomeModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center; border: 2px solid var(--gold-primary); background: radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, var(--bg-black) 100%); position: relative;">
+            <span class="closeWelcome" style="position: absolute; right: 20px; top: 10px; font-size: 2rem; cursor: pointer; color: var(--text-gray);">&times;</span>
+            <div style="font-size: 3rem; margin-bottom: 10px;">🎁</div>
+            <h2 style="font-family: var(--font-heading); color: var(--gold-primary); margin-bottom: 15px; font-size: 2rem;">Exclusive Offer!</h2>
+            <p style="color: var(--text-white); font-size: 1.1rem; margin-bottom: 20px;">
+                Get <span style="color: var(--gold-primary); font-weight: bold; font-size: 1.3rem;">10% to 40% OFF</span><br>on your first order.
+            </p>
+            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px dashed var(--gold-primary); margin-bottom: 20px;">
+                <p style="color: var(--text-gray); font-size: 0.9rem; margin-bottom: 5px;">Use Code on WhatsApp:</p>
+                <h3 style="letter-spacing: 3px; font-size: 1.5rem; margin: 0; color: white;">WELCOME10</h3>
+            </div>
+            <button class="confirm-btn" id="claimWelcomeBtn" style="width: 100%; font-size: 1rem; padding: 15px; box-shadow: var(--gold-glow);">CLAIM NOW</button>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Product Reviews</h2>
+                <span class="closeReview" style="font-size: 2rem; cursor: pointer; color: var(--text-gray);">&times;</span>
+            </div>
+            
+            <div id="reviewList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px;">
+                <!-- Reviews injected here -->
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <h3 style="color: var(--gold-primary); margin-bottom: 15px;">Write a Review</h3>
+                <form id="reviewForm">
+                    <input type="hidden" id="reviewPid">
+                    
+                    <div class="input-group">
+                        <label>Rating</label>
+                        <select id="reviewRating" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px;" required>
+                            <option value="5" style="color: black;">⭐⭐⭐⭐⭐ (5/5)</option>
+                            <option value="4" style="color: black;">⭐⭐⭐⭐ (4/5)</option>
+                            <option value="3" style="color: black;">⭐⭐⭐ (3/5)</option>
+                            <option value="2" style="color: black;">⭐⭐ (2/5)</option>
+                            <option value="1" style="color: black;">⭐ (1/5)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group full">
+                        <label>Your Message</label>
+                        <textarea id="reviewMessage" rows="3" placeholder="Tell us what you loved about it..." required></textarea>
+                    </div>
+                    
+                    <div class="input-group full">
+                        <label>Upload Photo (Optional)</label>
+                        <input type="file" id="reviewPhoto" accept="image/*">
+                    </div>
+                    
+                    <button type="submit" id="submitReviewBtn" class="confirm-btn">Submit Review</button>
+                </form>
+            </div>
         </div>
     </div>
 

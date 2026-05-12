@@ -234,6 +234,21 @@ async function init() {
             if (sideMenu) sideMenu.classList.remove('open');
         };
     }
+
+    updateGlobalViewers();
+    setInterval(updateGlobalViewers, 60000); // Check every minute
+    
+    checkWelcomeOffer();
+}
+
+function checkWelcomeOffer() {
+    if (!localStorage.getItem('welcomeShown')) {
+        setTimeout(() => {
+            const welcomeModal = document.getElementById('welcomeModal');
+            if (welcomeModal) welcomeModal.style.display = 'block';
+            localStorage.setItem('welcomeShown', 'true');
+        }, 3000); // Show after 3 seconds
+    }
 }
 
 function setupScrollProgress() {
@@ -445,6 +460,44 @@ function updateAdminStats() {
     container.style.display = 'block';
 }
 
+function getGlobalLiveViewers() {
+    const now = new Date();
+    const hours = now.getHours();
+    
+    let min = 5;
+    let max = 15;
+    
+    // Night: 9 PM (21) to 1 AM (1)
+    if (hours >= 21 || hours < 1) {
+        min = 10;
+        max = 20;
+    } 
+    // Day: 1 AM (1) to 7 PM (19)
+    else if (hours >= 1 && hours < 19) {
+        min = 5;
+        max = 10;
+    }
+    // Evening: 7 PM (19) to 9 PM (21)
+    else {
+        min = 8;
+        max = 15;
+    }
+
+    // Update every 5 mins
+    const timeBlock = Math.floor(now.getTime() / (5 * 60 * 1000));
+    
+    // Simple pseudo-random based on timeBlock
+    const rand = (timeBlock * 9301 + 49297) % 233280 / 233280;
+    return Math.floor(min + rand * (max - min + 1));
+}
+
+function updateGlobalViewers() {
+    const el = document.getElementById('viewersCount');
+    if (el) {
+        el.textContent = getGlobalLiveViewers();
+    }
+}
+
 async function renderProducts(append = false) {
     console.log("Render Triggered - Append:", append, "Products Count:", products.length);
     updateAdminStats();
@@ -545,82 +598,126 @@ async function renderProducts(append = false) {
         const discountPercent = 20 + (seed % 21);
         const mrp = Math.round(p.price / (1 - (discountPercent / 100)));
 
+        let badgeLabel = '';
+        let badgeClass = '';
+        if (p.badge && p.badge !== 'none') {
+            if (p.badge === 'hot') { badgeLabel = '🔥 HOT SELLING'; badgeClass = 'hot'; }
+            else if (p.badge === 'limited') { badgeLabel = '⏳ LIMITED STOCK'; badgeClass = 'limited'; }
+            else if (p.badge === 'new') { badgeLabel = '✨ NEW ARRIVAL'; badgeClass = 'new'; }
+            else if (p.badge === 'premium') { badgeLabel = '💎 PREMIUM QUALITY'; badgeClass = 'premium'; }
+        }
+
+        // Related products logic
+        const relatedList = finalProducts
+            .filter(rp => rp.category === p.category && String(rp.id) !== String(p.id))
+            .slice(0, 3);
+
+        let relatedHtml = '';
+        if (relatedList.length > 0) {
+            relatedHtml = `
+            <div class="related-products-section" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                <h4 style="font-size: 0.75rem; color: var(--gold-primary); margin-bottom: 10px; letter-spacing: 1px;">YOU MIGHT ALSO LIKE</h4>
+                <div class="related-scroll" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
+                    ${relatedList.map(rp => `
+                        <div class="related-item" onclick="document.getElementById('p-${rp.id}') ? document.getElementById('p-${rp.id}').scrollIntoView({behavior: 'smooth', block: 'center'}) : null" style="min-width: 80px; text-align: center; cursor: pointer; flex-shrink: 0;">
+                            <img src="${rp.images && rp.images.length > 0 ? rp.images[0] : ''}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.3); margin-bottom: 5px;">
+                            <p style="font-size: 0.65rem; color: var(--text-white); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px;">₹${rp.price.toLocaleString()}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
         const slides = [p.video, ...p.images];
         return `
         <div class="product-item ${p.pinned ? 'is-pinned' : ''} ${p.isShared ? 'is-shared' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
-            ${p.isShared ? '<div class="shared-badge">✨ SHARED MASTERPIECE</div>' : ''}
-            ${(p.pinned && isAdminLoggedIn && !p.isShared) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
-            
-            <div class="carousel-container">
-                <!-- Slide 0: Video -->
-                <div class="media-slide active" data-index="0">
-                    <video class="product-video" loop muted playsinline preload="none">
-                        <source src="${p.video}" type="video/mp4">
-                    </video>
-                </div>
+            <div class="product-media-wrapper">
+                ${p.isShared ? '<div class="shared-badge">✨ SHARED MASTERPIECE</div>' : ''}
+                ${(p.pinned && isAdminLoggedIn && !p.isShared) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
+                ${badgeLabel ? `<div class="product-special-badge ${badgeClass}">${badgeLabel}</div>` : ''}
                 
-                <!-- Other Slides: Images -->
-                ${p.images.map((img, idx) => `
-                    <div class="media-slide" data-index="${idx + 1}" onclick="openZoom('${p.id}', ${idx})" style="cursor: zoom-in;">
-                        <img src="${img}" class="product-img" loading="lazy">
+                <div class="carousel-container">
+                    <!-- Slide 0: Video -->
+                    <div class="media-slide active" data-index="0">
+                        <video class="product-video" loop muted playsinline preload="none">
+                            <source src="${p.video}" type="video/mp4">
+                        </video>
                     </div>
-                `).join('')}
+                    
+                    <!-- Other Slides: Images -->
+                    ${p.images.map((img, idx) => `
+                        <div class="media-slide" data-index="${idx + 1}" onclick="openZoom('${p.id}', ${idx})" style="cursor: zoom-in;">
+                            <img src="${img}" class="product-img" loading="lazy">
+                        </div>
+                    `).join('')}
 
-                <!-- Nav Buttons -->
-                <div class="carousel-nav">
-                    <div class="nav-arr" onclick="changeSlide('${p.id}', -1)">❮</div>
-                    <div class="nav-arr" onclick="changeSlide('${p.id}', 1)">❯</div>
+                    <!-- Nav Buttons -->
+                    <div class="carousel-nav">
+                        <div class="nav-arr" onclick="changeSlide('${p.id}', -1)">❮</div>
+                        <div class="nav-arr" onclick="changeSlide('${p.id}', 1)">❯</div>
+                    </div>
+
+                    <div class="video-overlay"></div>
                 </div>
 
-                <div class="video-overlay"></div>
+                <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
+                    ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
+                </div>
+
+                <div class="card-share-btn" onclick="shareProduct('${p.id}')" title="Share this masterpiece">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                </div>
+
+                ${isAdminLoggedIn ? `
+                    <div class="admin-controls" style="z-index: 40;">
+                        <button class="control-btn pin-btn" onclick="togglePin('${p.id}')" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
+                            ${p.pinned ? '📍' : '📌'}
+                        </button>
+                        <button class="control-btn edit-btn" onclick="openEditModal('${p.id}')" title="Edit Product">
+                            ✏️
+                        </button>
+                        <button class="control-btn delete-btn" onclick="deleteProduct('${p.id}')" title="Delete Product">
+                            🗑️
+                        </button>
+                    </div>
+                ` : ''}
+
+                <div class="product-info">
+                    <h2 class="product-name">${p.name}</h2>
+                    <div class="price-container">
+                        <span class="product-price">₹${p.price.toLocaleString()}</span>
+                        <span class="mrp-price">₹${mrp.toLocaleString()}</span>
+                        <span class="discount-badge">${discountPercent}% OFF</span>
+                    </div>
+                    
+                    <div class="desc-wrapper">
+                        <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
+                        ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
+                        ${cart.includes(String(p.id))
+                    ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
+                    : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
+                }
+                    </div>
+                </div>
             </div>
 
-            <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
-                ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
-            </div>
-
-            <div class="card-share-btn" onclick="shareProduct('${p.id}')" title="Share this masterpiece">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"></circle>
-                    <circle cx="6" cy="12" r="3"></circle>
-                    <circle cx="18" cy="19" r="3"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-            </div>
-
-            ${isAdminLoggedIn ? `
-                <div class="admin-controls" style="z-index: 40;">
-                    <button class="control-btn pin-btn" onclick="togglePin('${p.id}')" title="${p.pinned ? 'Unpin' : 'Pin'} Product">
-                        ${p.pinned ? '📍' : '📌'}
-                    </button>
-                    <button class="control-btn edit-btn" onclick="openEditModal('${p.id}')" title="Edit Product">
-                        ✏️
-                    </button>
-                    <button class="control-btn delete-btn" onclick="deleteProduct('${p.id}')" title="Delete Product">
-                        🗑️
-                    </button>
+            <!-- EXTRAS -->
+            <div class="product-extras" style="padding: 15px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05);">
+                <div style="margin-bottom: 10px;">
+                    <span onclick="openReviewModal('${p.id}')" style="cursor: pointer; color: var(--gold-primary); font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(212, 175, 55, 0.1); padding: 8px; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.3); width: 100%; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                        ⭐⭐⭐⭐⭐ <span style="text-decoration: underline; color: var(--text-white);">Customer Reviews</span>
+                    </span>
                 </div>
-            ` : ''}
-
-            <div class="product-info">
-                <h2 class="product-name">${p.name}</h2>
-                <div class="price-container">
-                    <span class="product-price">₹${p.price.toLocaleString()}</span>
-                    <span class="mrp-price">₹${mrp.toLocaleString()}</span>
-                    <span class="discount-badge">${discountPercent}% OFF</span>
-                </div>
-                <div class="desc-wrapper">
-                    <p class="product-desc" id="desc-${p.id}">${p.description || ''}</p>
-                    ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
-                </div>
-                <div class="actions">
-                    <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
-                    ${cart.includes(String(p.id))
-                ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
-                : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
-            }
-                </div>
+                ${relatedHtml}
             </div>
         </div>
     `}).join('');
@@ -775,6 +872,11 @@ function openEditModal(id) {
     document.getElementById('editName').value = product.name;
     document.getElementById('editPrice').value = product.price;
     document.getElementById('editDesc').value = product.description;
+    
+    const editBadge = document.getElementById('editBadge');
+    if (editBadge) {
+        editBadge.value = product.badge || 'none';
+    }
 
     editModal.style.display = "block";
 }
@@ -1041,6 +1143,10 @@ function setupEventListeners() {
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             sideMenu.classList.add('open');
+            const menuHint = document.getElementById('menuHint');
+            if (menuHint) {
+                menuHint.style.display = 'none';
+            }
         });
     }
 
@@ -1088,6 +1194,16 @@ function setupEventListeners() {
     const closeWishlist = document.querySelector('.closeWishlist');
     if (closeWishlist) closeWishlist.onclick = () => wishlistModal.style.display = "none";
 
+    const welcomeModal = document.getElementById('welcomeModal');
+    const closeWelcome = document.querySelector('.closeWelcome');
+    const claimWelcomeBtn = document.getElementById('claimWelcomeBtn');
+    
+    if (closeWelcome) closeWelcome.onclick = () => welcomeModal.style.display = 'none';
+    if (claimWelcomeBtn) claimWelcomeBtn.onclick = () => {
+        welcomeModal.style.display = 'none';
+        showNotification('Code WELCOME10 copied! Use it on WhatsApp.');
+    };
+
     closeBtn.onclick = () => buyModal.style.display = "none";
     closeCart.onclick = () => cartModal.style.display = "none";
     closeAdmin.onclick = () => {
@@ -1106,7 +1222,8 @@ function setupEventListeners() {
     closeZoom.onclick = () => zoomModal.style.display = "none";
     // Unified Modal Closer
     window.onclick = (e) => {
-        const modals = [zoomModal, buyModal, cartModal, wishlistModal, adminModal, editModal, document.getElementById('authModal')];
+        const reviewModal = document.getElementById('reviewModal');
+        const modals = [zoomModal, buyModal, cartModal, wishlistModal, adminModal, editModal, document.getElementById('authModal'), document.getElementById('welcomeModal'), reviewModal];
         modals.forEach(modal => {
             if (modal && e.target == modal) modal.style.display = "none";
         });
@@ -1207,12 +1324,15 @@ function setupEventListeners() {
             const newName = document.getElementById('editName').value;
             const newPrice = Number(document.getElementById('editPrice').value);
             const newDesc = document.getElementById('editDesc').value;
+            const editBadgeEl = document.getElementById('editBadge');
+            const newBadge = editBadgeEl ? editBadgeEl.value : 'none';
 
             if (isFirebaseAvailable && isFirebaseConfigured) {
                 await db.collection('products').doc(id).update({
                     name: newName,
                     price: newPrice,
-                    description: newDesc
+                    description: newDesc,
+                    badge: newBadge
                 });
             } else {
                 const product = products.find(p => String(p.id) === String(id));
@@ -1220,6 +1340,7 @@ function setupEventListeners() {
                     product.name = newName;
                     product.price = newPrice;
                     product.description = newDesc;
+                    product.badge = newBadge;
                     await saveLocalProduct(product);
                     syncProducts();
                 }
@@ -1290,6 +1411,31 @@ function setupEventListeners() {
         const waUrl = `https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(message)}`;
         window.open(waUrl, '_blank');
         buyModal.style.display = "none";
+
+        // --- Auto-Save Inquiry to CRM ---
+        const autoInq = {
+            id: Date.now().toString(),
+            customerName: details.name,
+            phone: details.phone,
+            product: orderType === 'bag' ? 'Bulk Cart Order' : (products.find(prod => String(prod.id) === String(pid))?.name || 'Unknown Product'),
+            source: 'Website',
+            followUpDate: new Date().toISOString().split('T')[0], // Default follow-up to today
+            status: 'Pending',
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            if (isFirebaseAvailable && isFirebaseConfigured) {
+                db.collection('inquiries').doc(autoInq.id).set(autoInq);
+            } else {
+                let localInq = JSON.parse(localStorage.getItem('inquiries') || '[]');
+                localInq.unshift(autoInq);
+                localStorage.setItem('inquiries', JSON.stringify(localInq));
+            }
+            if (typeof loadInquiries === 'function') loadInquiries();
+        } catch(err) {
+            console.error("Failed to auto-save inquiry:", err);
+        }
     };
 
     const readFile = (file) => {
@@ -1367,6 +1513,7 @@ function setupEventListeners() {
                 price: Number(document.getElementById('pPrice').value),
                 description: document.getElementById('pDesc').value,
                 category: document.getElementById('pCat').value,
+                badge: document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'none',
                 video: videoUrl,
                 images: imageUrls,
                 pinned: false,
@@ -1782,6 +1929,358 @@ function resetAuthModal() {
     if (name) name.value = '';
     document.querySelectorAll('.otp-input').forEach(i => i.value = '');
     goToStep(1);
+}
+
+// --- Review System ---
+window.openReviewModal = async function(pid) {
+    const reviewModal = document.getElementById('reviewModal');
+    document.getElementById('reviewPid').value = pid;
+    const reviewList = document.getElementById('reviewList');
+    
+    reviewList.innerHTML = '<p style="color: var(--text-gray); text-align: center;">Loading reviews...</p>';
+    reviewModal.style.display = 'block';
+
+    try {
+        let html = '';
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            const snapshot = await db.collection('products').doc(pid).collection('reviews').orderBy('timestamp', 'desc').get();
+            if (snapshot.empty) {
+                html = '<p style="color: var(--text-gray); text-align: center;">No reviews yet. Be the first to write one!</p>';
+            } else {
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    const stars = '⭐'.repeat(r.rating);
+                    html += `
+                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border);">
+                            <div style="margin-bottom: 5px;">${stars}</div>
+                            <p style="color: var(--text-white); font-size: 0.9rem; margin-bottom: ${r.photoUrl ? '10px' : '0'};">${r.message}</p>
+                            ${r.photoUrl ? `<img src="${r.photoUrl}" style="max-width: 100px; border-radius: 5px; border: 1px solid var(--gold-primary); cursor: pointer;" onclick="window.open('${r.photoUrl}')">` : ''}
+                        </div>
+                    `;
+                });
+            }
+        } else {
+            // Local fallback
+            const localReviews = JSON.parse(localStorage.getItem(`reviews_${pid}`) || '[]');
+            if (localReviews.length === 0) {
+                html = '<p style="color: var(--text-gray); text-align: center;">No reviews yet. Be the first to write one!</p>';
+            } else {
+                localReviews.forEach(r => {
+                    const stars = '⭐'.repeat(r.rating);
+                    html += `
+                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border);">
+                            <div style="margin-bottom: 5px;">${stars}</div>
+                            <p style="color: var(--text-white); font-size: 0.9rem; margin-bottom: ${r.photoUrl ? '10px' : '0'};">${r.message}</p>
+                            ${r.photoUrl ? `<img src="${r.photoUrl}" style="max-width: 100px; border-radius: 5px; border: 1px solid var(--gold-primary); cursor: pointer;" onclick="window.open('${r.photoUrl}')">` : ''}
+                        </div>
+                    `;
+                });
+            }
+        }
+        reviewList.innerHTML = html;
+    } catch(err) {
+        reviewList.innerHTML = '<p style="color: red; text-align: center;">Failed to load reviews.</p>';
+    }
+};
+
+const closeReviewBtn = document.querySelector('.closeReview');
+if(closeReviewBtn) {
+    closeReviewBtn.onclick = () => document.getElementById('reviewModal').style.display = 'none';
+}
+
+const reviewForm = document.getElementById('reviewForm');
+if(reviewForm) {
+    reviewForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitReviewBtn');
+        const origText = btn.textContent;
+        btn.textContent = 'Submitting...';
+        btn.disabled = true;
+
+        try {
+            const pid = document.getElementById('reviewPid').value;
+            const rating = Number(document.getElementById('reviewRating').value);
+            const message = document.getElementById('reviewMessage').value;
+            const photoInput = document.getElementById('reviewPhoto');
+            
+            let photoUrl = '';
+            if (photoInput.files.length > 0) {
+                btn.textContent = 'Uploading Photo...';
+                photoUrl = await uploadToCloudinary(photoInput.files[0], (p) => {
+                    btn.textContent = `Photo: ${Math.round(p)}%`;
+                });
+            }
+
+            const reviewData = {
+                rating,
+                message,
+                photoUrl,
+                timestamp: isFirebaseAvailable ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString()
+            };
+
+            if (isFirebaseAvailable && isFirebaseConfigured) {
+                await db.collection('products').doc(pid).collection('reviews').add(reviewData);
+            } else {
+                const localReviews = JSON.parse(localStorage.getItem(`reviews_${pid}`) || '[]');
+                localReviews.unshift(reviewData);
+                localStorage.setItem(`reviews_${pid}`, JSON.stringify(localReviews));
+            }
+
+            showNotification('Thank you for your review!');
+            reviewForm.reset();
+            window.openReviewModal(pid); // Refresh list
+        } catch(err) {
+            console.error(err);
+            showNotification('Error submitting review.');
+        } finally {
+            btn.textContent = origText;
+            btn.disabled = false;
+        }
+    };
+}
+
+// --- Inquiries CRM System ---
+let inquiries = [];
+
+async function loadInquiries() {
+    if (!isAdminLoggedIn) return;
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            const snapshot = await db.collection('inquiries').orderBy('timestamp', 'desc').get();
+            inquiries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } else {
+            inquiries = JSON.parse(localStorage.getItem('inquiries') || '[]');
+        }
+        renderInquiries();
+        checkFollowUps();
+    } catch(err) {
+        console.error("Error loading inquiries:", err);
+        // Fallback to local if firebase fails
+        inquiries = JSON.parse(localStorage.getItem('inquiries') || '[]');
+        renderInquiries();
+        checkFollowUps();
+    }
+}
+
+function renderInquiries() {
+    const dueTodayList = document.getElementById('dueTodayList');
+    const allList = document.getElementById('allInquiriesList');
+    const dueSection = document.getElementById('dueTodaySection');
+    
+    if (!dueTodayList || !allList) return;
+
+    let dueHtml = '';
+    let allHtml = '';
+    
+    const today = new Date().toISOString().split('T')[0];
+    let dueCount = 0;
+
+    inquiries.forEach(inq => {
+        const isDue = inq.followUpDate && inq.followUpDate <= today && inq.status !== 'Completed';
+        const cardHtml = `
+            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid ${isDue ? '#ff4d4d' : 'var(--glass-border)'}; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <strong style="color: var(--gold-primary); font-size: 1.1rem;">${inq.customerName}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-gray);">${inq.phone} • Source: ${inq.source}</div>
+                    </div>
+                    <span style="font-size: 0.75rem; background: ${inq.status === 'Completed' ? '#25D366' : 'rgba(255,255,255,0.1)'}; color: white; padding: 2px 6px; border-radius: 4px;">${inq.status || 'Pending'}</span>
+                </div>
+                <div style="font-size: 0.9rem; color: white;">Product: ${inq.product}</div>
+                <div style="font-size: 0.8rem; color: ${isDue ? '#ff4d4d' : '#ffca28'}; font-weight: ${isDue ? 'bold' : 'normal'};">Follow-up: ${inq.followUpDate || 'None'}</div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <button onclick="sendFollowUp('${inq.phone}', '${inq.customerName}', '${inq.product.replace(/'/g, "\\'")}')" style="flex: 1; background: #25D366; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.8rem;">WhatsApp</button>
+                    <button onclick="markInquiryCompleted('${inq.id}')" style="background: var(--glass-border); color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;">${inq.status === 'Completed' ? 'Undo' : 'Done ✅'}</button>
+                    <button onclick="deleteInquiry('${inq.id}')" style="background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                </div>
+            </div>
+        `;
+        
+        if (isDue) {
+            dueHtml += cardHtml;
+            dueCount++;
+        } else {
+            allHtml += cardHtml;
+        }
+    });
+
+    if (dueCount > 0) {
+        if(dueSection) dueSection.style.display = 'block';
+        dueTodayList.innerHTML = dueHtml;
+    } else {
+        if(dueSection) dueSection.style.display = 'none';
+        dueTodayList.innerHTML = '';
+    }
+    
+    allList.innerHTML = allHtml || '<p style="color: var(--text-gray);">No pending inquiries.</p>';
+}
+
+function checkFollowUps() {
+    if (!isAdminLoggedIn) return;
+    const today = new Date().toISOString().split('T')[0];
+    let dueCount = inquiries.filter(inq => inq.followUpDate && inq.followUpDate <= today && inq.status !== 'Completed').length;
+    
+    const badge = document.getElementById('inquiryBadge');
+    const adminBtnEl = document.getElementById('adminBtn');
+    
+    if (dueCount > 0) {
+        if(badge) {
+            badge.style.display = 'inline-block';
+            badge.textContent = dueCount;
+        }
+        if(adminBtnEl) {
+            adminBtnEl.innerHTML = `+ <span style="position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; border: 2px solid #000;"></span>`;
+        }
+        // Show Toast once per session
+        if (!sessionStorage.getItem('notifiedDue')) {
+            showNotification(`🔔 Reminder: ${dueCount} follow-ups are due today!`);
+            sessionStorage.setItem('notifiedDue', 'true');
+        }
+    } else {
+        if(badge) badge.style.display = 'none';
+        if(adminBtnEl) adminBtnEl.innerHTML = `+`;
+    }
+}
+
+window.sendFollowUp = function(phone, name, product) {
+    const msg = `Hello ${name}! 👋\nAapne recently hamari website par *${product}* ke baare mein inquiry ki thi.\nKya main aapki koi aur madad kar sakta hu ya order confirm karun? 😊`;
+    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+window.markInquiryCompleted = async function(id) {
+    const inq = inquiries.find(i => i.id === id);
+    if (!inq) return;
+    
+    inq.status = inq.status === 'Completed' ? 'Pending' : 'Completed';
+    
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            await db.collection('inquiries').doc(id).update({ status: inq.status });
+        }
+    } catch(err) {
+        console.warn(err);
+    }
+    // Always update local storage fallback
+    localStorage.setItem('inquiries', JSON.stringify(inquiries));
+    renderInquiries();
+    checkFollowUps();
+};
+
+window.deleteInquiry = async function(id) {
+    if(!confirm("Delete this inquiry?")) return;
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            await db.collection('inquiries').doc(id).delete();
+        }
+    } catch(err) {
+        console.warn(err);
+    }
+    inquiries = inquiries.filter(i => i.id !== id);
+    localStorage.setItem('inquiries', JSON.stringify(inquiries));
+    renderInquiries();
+    checkFollowUps();
+};
+
+// Setup Admin Tabs Logic inside a function so we can ensure elements exist
+function setupAdminTabs() {
+    const tabUploadBtn = document.getElementById('tabUploadBtn');
+    const tabInquiriesBtn = document.getElementById('tabInquiriesBtn');
+    const tabUpload = document.getElementById('tabUpload');
+    const tabInquiries = document.getElementById('tabInquiries');
+
+    if (tabUploadBtn && tabInquiriesBtn) {
+        tabUploadBtn.onclick = (e) => {
+            e.preventDefault();
+            tabUploadBtn.style.background = 'var(--gold-gradient)';
+            tabUploadBtn.style.color = '#000';
+            tabInquiriesBtn.style.background = 'rgba(255,255,255,0.05)';
+            tabInquiriesBtn.style.color = 'var(--text-white)';
+            if(tabUpload) tabUpload.style.display = 'block';
+            if(tabInquiries) tabInquiries.style.display = 'none';
+        };
+        tabInquiriesBtn.onclick = (e) => {
+            e.preventDefault();
+            tabInquiriesBtn.style.background = 'var(--gold-gradient)';
+            tabInquiriesBtn.style.color = '#000';
+            tabUploadBtn.style.background = 'rgba(255,255,255,0.05)';
+            tabUploadBtn.style.color = 'var(--text-white)';
+            if(tabInquiries) tabInquiries.style.display = 'block';
+            if(tabUpload) tabUpload.style.display = 'none';
+            loadInquiries();
+        };
+    }
+
+    const addManualInquiryBtn = document.getElementById('addManualInquiryBtn');
+    const manualInquiryForm = document.getElementById('manualInquiryForm');
+    if (addManualInquiryBtn && manualInquiryForm) {
+        addManualInquiryBtn.onclick = (e) => {
+            e.preventDefault();
+            manualInquiryForm.style.display = manualInquiryForm.style.display === 'none' ? 'block' : 'none';
+        };
+    }
+
+    if (manualInquiryForm) {
+        manualInquiryForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = manualInquiryForm.querySelector('button[type="submit"]');
+            const origTxt = btn.textContent;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const newInq = {
+                id: Date.now().toString(),
+                customerName: document.getElementById('inqName').value,
+                phone: document.getElementById('inqPhone').value,
+                product: document.getElementById('inqProduct').value,
+                source: document.getElementById('inqSource').value,
+                followUpDate: document.getElementById('inqDate').value,
+                status: 'Pending',
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                if (isFirebaseAvailable && isFirebaseConfigured) {
+                    await db.collection('inquiries').doc(newInq.id).set(newInq);
+                }
+            } catch(err) {
+                console.warn(err);
+            }
+            
+            inquiries.unshift(newInq);
+            localStorage.setItem('inquiries', JSON.stringify(inquiries));
+            
+            manualInquiryForm.reset();
+            manualInquiryForm.style.display = 'none';
+            renderInquiries();
+            checkFollowUps();
+            showNotification('Inquiry saved successfully!');
+            
+            btn.textContent = origTxt;
+            btn.disabled = false;
+        };
+    }
+}
+
+// Intercept Admin Login success to initialize CRM tabs and load data
+const originalLoginComplete = window.renderProducts; // We can trigger load on admin view display
+// Let's hook into admin button or just run setupAdminTabs on init
+setTimeout(() => {
+    setupAdminTabs();
+    if (isAdminLoggedIn) {
+        loadInquiries();
+    }
+}, 500);
+
+// Hook into existing adminBtn onclick to also setup/load inquiries if logged in
+const oldAdminBtnClick = document.getElementById('adminBtn')?.onclick;
+if (document.getElementById('adminBtn')) {
+    document.getElementById('adminBtn').addEventListener('click', () => {
+        setTimeout(() => {
+            setupAdminTabs();
+            if (isAdminLoggedIn) loadInquiries();
+        }, 100);
+    });
 }
 
 init();
