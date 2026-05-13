@@ -614,10 +614,12 @@ async function renderProducts(append = false) {
         return `
         <div class="product-item ${p.pinned ? 'is-pinned' : ''} ${p.isShared ? 'is-shared' : ''}" id="p-${p.id}" data-aos="fade-up" data-slide="0">
             <div class="product-media-wrapper">
-                ${p.isShared ? '<div class="shared-badge">✨ SHARED MASTERPIECE</div>' : ''}
-                ${(p.pinned && isAdminLoggedIn && !p.isShared) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
-                ${badgeLabel ? `<div class="product-special-badge ${badgeClass}">${badgeLabel}</div>` : ''}
-                
+                ${p.inStock === false ? `
+                    <div class="sold-out-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 30; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                        <div style="border: 2px solid var(--gold-primary); color: var(--gold-primary); font-weight: 900; letter-spacing: 4px; padding: 10px 20px; font-size: 1.5rem; transform: rotate(-10deg); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(255,215,0,0.3);">SOLD OUT</div>
+                    </div>
+                ` : ''}
+
                 <div class="carousel-container">
                     <!-- Slide 0: Video -->
                     <div class="media-slide active" data-index="0">
@@ -641,6 +643,11 @@ async function renderProducts(append = false) {
 
                     <div class="video-overlay"></div>
                 </div>
+
+                <!-- Badges placed safely on top of carousel media -->
+                ${p.isShared ? '<div class="shared-badge">✨ SHARED MASTERPIECE</div>' : ''}
+                ${(p.pinned && isAdminLoggedIn && !p.isShared) ? '<div class="pin-badge">📌 PINNED</div>' : ''}
+                ${badgeLabel ? `<div class="product-special-badge ${badgeClass}">${badgeLabel}</div>` : ''}
 
                 <div class="wishlist-btn ${wishlist.includes(String(p.id)) ? 'active' : ''}" onclick="toggleWishlist('${p.id}')">
                     ${wishlist.includes(String(p.id)) ? '❤️' : '🤍'}
@@ -683,11 +690,15 @@ async function renderProducts(append = false) {
                         ${(p.description && p.description.length > 50) ? `<button class="read-more-btn" id="btn-${p.id}" onclick="toggleDesc('${p.id}')">more...</button>` : ''}
                     </div>
                     <div class="actions">
-                        <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
-                        ${cart.includes(String(p.id))
-                    ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
-                    : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
-                }
+                        ${p.inStock === false ? `
+                            <button class="btn btn-buy" style="width: 100%; opacity: 0.5; cursor: not-allowed; background: #333; color: #888; border: 1px solid #444;" disabled>SOLD OUT</button>
+                        ` : `
+                            <button class="btn btn-buy" onclick="openOrderModal('${p.id}')">BUY NOW</button>
+                            ${cart.includes(String(p.id))
+                                ? `<button class="btn btn-cart" style="opacity: 0.7; border-color: var(--gold-primary);" disabled>IN BAG</button>`
+                                : `<button class="btn btn-cart" onclick="addToCart('${p.id}')">ADD TO BAG</button>`
+                            }
+                        `}
                     </div>
                 </div>
             </div>
@@ -2121,19 +2132,29 @@ window.deletePromoCode = async function(id) {
 // Setup Admin Tabs Logic inside a function so we can ensure elements exist
 function setupAdminTabs() {
     const tabUploadBtn = document.getElementById('tabUploadBtn');
+    const tabStockBtn = document.getElementById('tabStockBtn');
     const tabInquiriesBtn = document.getElementById('tabInquiriesBtn');
     const tabPromoBtn = document.getElementById('tabPromoBtn');
+    const tabAnalyticsBtn = document.getElementById('tabAnalyticsBtn');
+
     const tabUpload = document.getElementById('tabUpload');
+    const tabStock = document.getElementById('tabStock');
     const tabInquiries = document.getElementById('tabInquiries');
     const tabPromo = document.getElementById('tabPromo');
+    const tabAnalytics = document.getElementById('tabAnalytics');
 
     const resetAdminTabs = () => {
         if(tabUploadBtn) { tabUploadBtn.style.background = 'rgba(255,255,255,0.05)'; tabUploadBtn.style.color = 'var(--text-white)'; }
+        if(tabStockBtn) { tabStockBtn.style.background = 'rgba(255,255,255,0.05)'; tabStockBtn.style.color = 'var(--text-white)'; }
         if(tabInquiriesBtn) { tabInquiriesBtn.style.background = 'rgba(255,255,255,0.05)'; tabInquiriesBtn.style.color = 'var(--text-white)'; }
         if(tabPromoBtn) { tabPromoBtn.style.background = 'rgba(255,255,255,0.05)'; tabPromoBtn.style.color = 'var(--text-white)'; }
+        if(tabAnalyticsBtn) { tabAnalyticsBtn.style.background = 'rgba(255,255,255,0.05)'; tabAnalyticsBtn.style.color = 'var(--text-white)'; }
+
         if(tabUpload) tabUpload.style.display = 'none';
+        if(tabStock) tabStock.style.display = 'none';
         if(tabInquiries) tabInquiries.style.display = 'none';
         if(tabPromo) tabPromo.style.display = 'none';
+        if(tabAnalytics) tabAnalytics.style.display = 'none';
     };
 
     if (tabUploadBtn) {
@@ -2142,6 +2163,15 @@ function setupAdminTabs() {
             resetAdminTabs();
             tabUploadBtn.style.background = 'var(--gold-gradient)'; tabUploadBtn.style.color = '#000';
             if(tabUpload) tabUpload.style.display = 'block';
+        };
+    }
+    if (tabStockBtn) {
+        tabStockBtn.onclick = (e) => {
+            e.preventDefault();
+            resetAdminTabs();
+            tabStockBtn.style.background = 'var(--gold-gradient)'; tabStockBtn.style.color = '#000';
+            if(tabStock) tabStock.style.display = 'block';
+            renderStockList();
         };
     }
     if (tabInquiriesBtn) {
@@ -2160,6 +2190,15 @@ function setupAdminTabs() {
             tabPromoBtn.style.background = 'var(--gold-gradient)'; tabPromoBtn.style.color = '#000';
             if(tabPromo) tabPromo.style.display = 'block';
             loadPromoCodes();
+        };
+    }
+    if (tabAnalyticsBtn) {
+        tabAnalyticsBtn.onclick = (e) => {
+            e.preventDefault();
+            resetAdminTabs();
+            tabAnalyticsBtn.style.background = 'var(--gold-gradient)'; tabAnalyticsBtn.style.color = '#000';
+            if(tabAnalytics) tabAnalytics.style.display = 'block';
+            loadRollingAnalytics();
         };
     }
 
@@ -2365,10 +2404,306 @@ function setupAdminTabs() {
             showNotification('Discount Applied!');
         };
     }
+
+    // Setup Search for Stock
+    const searchStockInput = document.getElementById('searchStockInput');
+    if (searchStockInput) {
+        searchStockInput.oninput = () => renderStockList();
+    }
+
+    // Setup Banner Controls
+    const saveBannerBtn = document.getElementById('saveBannerBtn');
+    if (saveBannerBtn) {
+        saveBannerBtn.onclick = async () => {
+            const active = document.getElementById('bannerActiveToggle').checked;
+            const text = document.getElementById('marqueeTextInput').value.trim();
+            const config = { active, text: text || "🔥 Welcome to Richvibe Collection! Enjoy Premium Craftsmanship." };
+            localStorage.setItem('storeBannerConfig', JSON.stringify(config));
+            
+            // Push real-time cloud update
+            try {
+                if (isFirebaseAvailable && isFirebaseConfigured) {
+                    await db.collection('settings').doc('banner').set(config);
+                }
+            } catch(e) { }
+
+            applyBannerConfig();
+            showNotification('Banner broadcasted live to all customers!');
+        };
+    }
+
+    // Setup Daily Sales Log form
+    const salesLogDate = document.getElementById('salesLogDate');
+    const saveSalesLogBtn = document.getElementById('saveSalesLogBtn');
+    if (salesLogDate) {
+        salesLogDate.onchange = () => populateSalesLogForDate(salesLogDate.value);
+    }
+    if (saveSalesLogBtn) {
+        saveSalesLogBtn.onclick = () => saveSalesLogEntry();
+    }
+}
+
+// --- Feature 1: Stock Manager Functions ---
+function renderStockList() {
+    const container = document.getElementById('stockListContainer');
+    if (!container) return;
+
+    const query = (document.getElementById('searchStockInput')?.value || '').toLowerCase().trim();
+    const filtered = products.filter(p => p.name.toLowerCase().includes(query));
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-gray); font-size: 0.85rem;">No matching masterpieces found.</p>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(p => {
+        const inStockStatus = p.inStock !== false; // defaults to true
+        return `
+            <div style="background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${p.images?.[0] || ''}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" loading="lazy">
+                    <div>
+                        <div style="color: white; font-size: 0.85rem; font-weight: bold;">${p.name}</div>
+                        <div style="color: var(--gold-primary); font-size: 0.75rem;">₹${p.price.toLocaleString()}</div>
+                    </div>
+                </div>
+                <button onclick="toggleProductStock('${p.id}', ${!inStockStatus})" style="background: ${inStockStatus ? '#25D366' : '#ff4d4d'}; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
+                    ${inStockStatus ? '🟢 In Stock' : '🔴 Sold Out'}
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleProductStock = async function(id, newStatus) {
+    try {
+        const p = products.find(prod => prod.id === id);
+        if (p) {
+            p.inStock = newStatus;
+            if (isFirebaseAvailable && isFirebaseConfigured) {
+                await db.collection('products').doc(id).update({ inStock: newStatus });
+            } else {
+                await saveLocalProduct(p);
+            }
+            renderStockList();
+            renderProducts();
+            showNotification(newStatus ? 'Marked In Stock' : 'Marked Sold Out');
+        }
+    } catch(err) {
+        console.warn(err);
+        showNotification('Error updating stock status.');
+    }
+};
+
+// --- Feature 2: Store Announcement Banner Logic ---
+function applyBannerConfig(cloudConfig = null) {
+    const bar = document.getElementById('storeAnnouncementBar');
+    const txtEl = document.getElementById('storeAnnouncementText');
+    if (!bar || !txtEl) return;
+
+    try {
+        let config = cloudConfig;
+        if (!config) {
+            const saved = localStorage.getItem('storeBannerConfig');
+            config = saved ? JSON.parse(saved) : { active: true, text: "🔥 Welcome to Richvibe Collection! Enjoy Premium Craftsmanship." };
+        } else {
+            localStorage.setItem('storeBannerConfig', JSON.stringify(config));
+        }
+        
+        if (config.active && config.text) {
+            bar.style.display = 'block';
+            txtEl.textContent = config.text;
+        } else {
+            bar.style.display = 'none';
+        }
+
+        // populate inputs if open
+        const activeToggle = document.getElementById('bannerActiveToggle');
+        const txtInput = document.getElementById('marqueeTextInput');
+        if (activeToggle) activeToggle.checked = config.active;
+        if (txtInput) txtInput.value = config.text;
+    } catch(e) { }
+}
+
+// --- Feature 3: Rolling 7-Day Analytics Logic ---
+let dailySalesLogs = {};
+
+async function loadRollingAnalytics() {
+    // initialize date to today
+    const dateInput = document.getElementById('salesLogDate');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (dateInput && !dateInput.value) {
+        dateInput.value = todayStr;
+    }
+
+    // Always load local storage first to preserve admin's immediate edits perfectly
+    let localLogs = {};
+    try {
+        localLogs = JSON.parse(localStorage.getItem('dailySalesLogs') || '{}');
+    } catch(e) { }
+
+    dailySalesLogs = { ...localLogs };
+
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            const snapshot = await db.collection('sales_logs').get();
+            snapshot.docs.forEach(doc => {
+                const cloudData = doc.data();
+                const localData = dailySalesLogs[doc.id];
+                // Use cloud data if local doesn't exist or cloud timestamp is newer
+                if (!localData || (cloudData.timestamp && localData.timestamp && cloudData.timestamp > localData.timestamp)) {
+                    dailySalesLogs[doc.id] = cloudData;
+                }
+            });
+            // backup synced state to local storage
+            localStorage.setItem('dailySalesLogs', JSON.stringify(dailySalesLogs));
+        }
+    } catch(err) {
+        console.warn("Error syncing sales logs with cloud, using local state:", err);
+    }
+
+    if (dateInput) {
+        populateSalesLogForDate(dateInput.value);
+    }
+    renderRollingAnalytics();
+}
+
+function populateSalesLogForDate(dateStr) {
+    if (!dateStr) return;
+    const entry = dailySalesLogs[dateStr] || { watches: 0, goggles: 0, crocs: 0, purses: 0 };
+    
+    document.getElementById('logWatches').value = entry.watches || 0;
+    document.getElementById('logGoggles').value = entry.goggles || 0;
+    document.getElementById('logCrocs').value = entry.crocs || 0;
+    document.getElementById('logPurses').value = entry.purses || 0;
+}
+
+async function saveSalesLogEntry() {
+    const dateStr = document.getElementById('salesLogDate')?.value;
+    if (!dateStr) {
+        showNotification('Please select a valid date.');
+        return;
+    }
+
+    const watches = Number(document.getElementById('logWatches').value) || 0;
+    const goggles = Number(document.getElementById('logGoggles').value) || 0;
+    const crocs = Number(document.getElementById('logCrocs').value) || 0;
+    const purses = Number(document.getElementById('logPurses').value) || 0;
+
+    const entry = { watches, goggles, crocs, purses, timestamp: new Date().toISOString() };
+    dailySalesLogs[dateStr] = entry;
+
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            await db.collection('sales_logs').doc(dateStr).set(entry);
+        }
+    } catch(err) { console.warn(err); }
+
+    localStorage.setItem('dailySalesLogs', JSON.stringify(dailySalesLogs));
+    showNotification(`Sales saved for ${dateStr}!`);
+    renderRollingAnalytics();
+}
+
+function renderRollingAnalytics() {
+    // Generate rolling 7 dates ending today/yesterday
+    const dates = [];
+    let totalUnitsSold = 0;
+    
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().split('T')[0];
+        dates.push(iso);
+    }
+
+    const adminHtmlRows = [];
+    const publicHtmlRows = [];
+
+    dates.forEach(isoDate => {
+        const entry = dailySalesLogs[isoDate] || { watches: 0, goggles: 0, crocs: 0, purses: 0 };
+        const dayTotal = (entry.watches || 0) + (entry.goggles || 0) + (entry.crocs || 0) + (entry.purses || 0);
+        totalUnitsSold += dayTotal;
+
+        // format beautiful user-readable string like "Wed, May 13"
+        const dObj = new Date(isoDate);
+        const displayDate = isNaN(dObj.getTime()) ? isoDate : dObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        // Admin row with emojis
+        adminHtmlRows.push(`
+            <div style="background: rgba(255,255,255,0.02); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: white; font-weight: bold; width: 100px;">${displayDate}</div>
+                <div style="display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap;">
+                    ${entry.watches ? `<span style="background: rgba(255,215,0,0.1); color: var(--gold-primary); font-size: 0.7rem; padding: 1px 5px; border-radius: 3px;">⌚ ${entry.watches}</span>` : ''}
+                    ${entry.goggles ? `<span style="background: rgba(37,211,102,0.1); color: #25D366; font-size: 0.7rem; padding: 1px 5px; border-radius: 3px;">🕶️ ${entry.goggles}</span>` : ''}
+                    ${entry.crocs ? `<span style="background: rgba(51,153,255,0.1); color: #3399ff; font-size: 0.7rem; padding: 1px 5px; border-radius: 3px;">👞 ${entry.crocs}</span>` : ''}
+                    ${entry.purses ? `<span style="background: rgba(255,102,178,0.1); color: #ff66b2; font-size: 0.7rem; padding: 1px 5px; border-radius: 3px;">👜 ${entry.purses}</span>` : ''}
+                </div>
+                <div style="font-weight: bold; color: ${dayTotal > 0 ? '#25D366' : 'var(--text-gray)'}; width: 60px; text-align: right;">
+                    ${dayTotal} Sold
+                </div>
+            </div>
+        `);
+
+        // Public row clean minimalist layout without emojis
+        publicHtmlRows.push(`
+            <div style="background: rgba(255,255,255,0.02); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: white; font-weight: bold;">${displayDate}</div>
+                <div style="font-weight: 800; color: ${dayTotal > 0 ? '#25D366' : 'var(--text-gray)'};">
+                    ${dayTotal} ${dayTotal === 1 ? 'Product' : 'Products'} Sold
+                </div>
+            </div>
+        `);
+    });
+
+    const listContainer = document.getElementById('analyticsWeeklyList');
+    const totalUnitsEl = document.getElementById('rollingTotalUnits');
+    if (listContainer) listContainer.innerHTML = adminHtmlRows.join('');
+    if (totalUnitsEl) totalUnitsEl.textContent = `${totalUnitsSold} Units Sold`;
+
+    // Update Public Footer Trust Proof Counter
+    const footerCounter = document.getElementById('footerPublicSalesCounter');
+    const footerCountText = document.getElementById('footerSalesCountText');
+    const publicWeeklyList = document.getElementById('publicWeeklyList');
+
+    if (footerCounter && footerCountText) {
+        if (totalUnitsSold > 0) {
+            footerCounter.style.display = 'block';
+            footerCountText.textContent = totalUnitsSold;
+            if (publicWeeklyList) {
+                publicWeeklyList.innerHTML = publicHtmlRows.join('');
+            }
+        } else {
+            footerCounter.style.display = 'none';
+        }
+    }
+}
+
+// --- Feature 4: Automatic Midnight Shift Engine ---
+function scheduleMidnightRoll() {
+    const now = new Date();
+    // Calculate exact milliseconds remaining until 00:00:00 of the next day
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime() - now.getTime();
+    
+    setTimeout(() => {
+        try {
+            renderRollingAnalytics();
+            // Automatically update admin logging input date to new Today if empty
+            const dateInput = document.getElementById('salesLogDate');
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+                populateSalesLogForDate(dateInput.value);
+            }
+        } catch(e) { }
+        // Set up continuous loop for subsequent midnights
+        scheduleMidnightRoll();
+    }, msUntilMidnight + 100); // 100ms safety padding to perfectly cross midnight boundary
 }
 
 // Intercept Admin Login success to initialize CRM tabs and load data
 setTimeout(() => {
+    applyBannerConfig();
+    loadRollingAnalytics(); // load unconditionally for footer counter
+    scheduleMidnightRoll(); // initiate automatic midnight counter layout adjustments
     setupAdminTabs();
     loadPromoCodes();
     if (isAdminLoggedIn) {
@@ -2382,9 +2717,25 @@ if (document.getElementById('adminBtn')) {
         setTimeout(() => {
             setupAdminTabs();
             loadPromoCodes();
-            if (isAdminLoggedIn) loadInquiries();
+            if (isAdminLoggedIn) {
+                loadInquiries();
+                loadRollingAnalytics();
+            }
         }, 100);
     });
 }
+
+// Setup continuous real-time listeners for live updates to all connected customers
+setTimeout(() => {
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            db.collection('settings').doc('banner').onSnapshot(doc => {
+                if (doc.exists) {
+                    applyBannerConfig(doc.data());
+                }
+            });
+        }
+    } catch(e) { }
+}, 1000);
 
 init();

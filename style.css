@@ -905,6 +905,60 @@ body {
     letter-spacing: 1px;
 }
 
+/* Custom Special Tag Badges */
+.product-special-badge {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    z-index: 100;
+    letter-spacing: 1.5px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.7);
+    text-transform: uppercase;
+    animation: badgeFloatCenter 2.5s infinite alternate ease-in-out;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+}
+
+@keyframes badgeFloatCenter {
+    0% { transform: translateX(-50%) translateY(0); }
+    100% { transform: translateX(-50%) translateY(-4px); }
+}
+
+
+
+.product-special-badge.hot {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.product-special-badge.limited {
+    background: linear-gradient(135deg, #f12711, #f5af19);
+    color: black;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+
+.product-special-badge.new {
+    background: linear-gradient(135deg, #00B4DB, #0083B0);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.product-special-badge.premium {
+    background: var(--gold-gradient);
+    color: black;
+    border: 1px solid white;
+}
+
+
 /* Video Section - Full Height */
 .product-video-container {
     position: absolute;
