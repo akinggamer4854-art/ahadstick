@@ -77,6 +77,8 @@ let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
 let currentZoomImages = [];
 let currentZoomIndex = 0;
+let promoCodes = [];
+let appliedPromoObj = null;
 
 const syncProducts = async () => {
     if (isFirebaseAvailable && isFirebaseConfigured) {
@@ -607,26 +609,6 @@ async function renderProducts(append = false) {
             else if (p.badge === 'premium') { badgeLabel = '💎 PREMIUM QUALITY'; badgeClass = 'premium'; }
         }
 
-        // Related products logic
-        const relatedList = finalProducts
-            .filter(rp => rp.category === p.category && String(rp.id) !== String(p.id))
-            .slice(0, 3);
-
-        let relatedHtml = '';
-        if (relatedList.length > 0) {
-            relatedHtml = `
-            <div class="related-products-section" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
-                <h4 style="font-size: 0.75rem; color: var(--gold-primary); margin-bottom: 10px; letter-spacing: 1px;">YOU MIGHT ALSO LIKE</h4>
-                <div class="related-scroll" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
-                    ${relatedList.map(rp => `
-                        <div class="related-item" onclick="document.getElementById('p-${rp.id}') ? document.getElementById('p-${rp.id}').scrollIntoView({behavior: 'smooth', block: 'center'}) : null" style="min-width: 80px; text-align: center; cursor: pointer; flex-shrink: 0;">
-                            <img src="${rp.images && rp.images.length > 0 ? rp.images[0] : ''}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.3); margin-bottom: 5px;">
-                            <p style="font-size: 0.65rem; color: var(--text-white); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px;">₹${rp.price.toLocaleString()}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
 
         const slides = [p.video, ...p.images];
         return `
@@ -710,15 +692,7 @@ async function renderProducts(append = false) {
                 </div>
             </div>
 
-            <!-- EXTRAS -->
-            <div class="product-extras" style="padding: 15px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05);">
-                <div style="margin-bottom: 10px;">
-                    <span onclick="openReviewModal('${p.id}')" style="cursor: pointer; color: var(--gold-primary); font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(212, 175, 55, 0.1); padding: 8px; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.3); width: 100%; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                        ⭐⭐⭐⭐⭐ <span style="text-decoration: underline; color: var(--text-white);">Customer Reviews</span>
-                    </span>
-                </div>
-                ${relatedHtml}
-            </div>
+
         </div>
     `}).join('');
 
@@ -1108,13 +1082,23 @@ document.head.appendChild(style);
 
 function openOrderModal(id) {
     if (id) {
-        const p = products.find(prod => prod.id === id);
+        const p = products.find(prod => String(prod.id) === String(id));
         buyModal.setAttribute('data-current-pid', id);
         buyModal.setAttribute('data-order-type', 'single');
     } else {
         buyModal.removeAttribute('data-current-pid');
         buyModal.setAttribute('data-order-type', 'bag');
     }
+    
+    // Reset Promo State
+    appliedPromoObj = null;
+    const appliedInput = document.getElementById('appliedPromoInput');
+    const promoMsg = document.getElementById('promoMessage');
+    const summaryBox = document.getElementById('orderSummaryBox');
+    if (appliedInput) appliedInput.value = '';
+    if (promoMsg) promoMsg.style.display = 'none';
+    if (summaryBox) summaryBox.style.display = 'none';
+    
     buyModal.style.display = "block";
 }
 
@@ -1222,8 +1206,7 @@ function setupEventListeners() {
     closeZoom.onclick = () => zoomModal.style.display = "none";
     // Unified Modal Closer
     window.onclick = (e) => {
-        const reviewModal = document.getElementById('reviewModal');
-        const modals = [zoomModal, buyModal, cartModal, wishlistModal, adminModal, editModal, document.getElementById('authModal'), document.getElementById('welcomeModal'), reviewModal];
+        const modals = [zoomModal, buyModal, cartModal, wishlistModal, adminModal, editModal, document.getElementById('authModal'), document.getElementById('welcomeModal')];
         modals.forEach(modal => {
             if (modal && e.target == modal) modal.style.display = "none";
         });
@@ -1383,6 +1366,11 @@ function setupEventListeners() {
             productSection = p ? `*PRODUCT DETAILS:*\n📦 Name: ${p.name}\n💰 Price: ₹${p.price.toLocaleString()}\n🔗 Link:\n${getProductLink(p.id)}` : '*Error: Product Not Found*';
         }
 
+        let promoSection = '';
+        if (appliedPromoObj) {
+            promoSection = `\n\n*🎁 PROMO APPLIED:*\n🏷️ Code: ${appliedPromoObj.codeStr}\n📉 Discount: -₹${appliedPromoObj.discountAmount.toLocaleString()}\n💳 *FINAL PAYABLE:* ₹${appliedPromoObj.finalTotal.toLocaleString()}`;
+        }
+
         const details = {
             name: document.getElementById('custName').value,
             phone: document.getElementById('custPhone').value,
@@ -1396,7 +1384,8 @@ function setupEventListeners() {
 
         const waNumber = "919724732823";
         const message = `*✨ RICHVIBE - ${orderTitle} ✨*\n\n` +
-            `${productSection}\n\n` +
+            `${productSection}` +
+            `${promoSection}\n\n` +
             `*CUSTOMER DETAILS:*\n` +
             `👤 Name: ${details.name}\n` +
             `📞 Phone 1: ${details.phone}\n` +
@@ -1417,7 +1406,7 @@ function setupEventListeners() {
             id: Date.now().toString(),
             customerName: details.name,
             phone: details.phone,
-            product: orderType === 'bag' ? 'Bulk Cart Order' : (products.find(prod => String(prod.id) === String(pid))?.name || 'Unknown Product'),
+            product: (orderType === 'bag' ? 'Bulk Cart Order' : (products.find(prod => String(prod.id) === String(pid))?.name || 'Unknown Product')) + (appliedPromoObj ? ` (Promo: ${appliedPromoObj.codeStr})` : ''),
             source: 'Website',
             followUpDate: new Date().toISOString().split('T')[0], // Default follow-up to today
             status: 'Pending',
@@ -1931,113 +1920,7 @@ function resetAuthModal() {
     goToStep(1);
 }
 
-// --- Review System ---
-window.openReviewModal = async function(pid) {
-    const reviewModal = document.getElementById('reviewModal');
-    document.getElementById('reviewPid').value = pid;
-    const reviewList = document.getElementById('reviewList');
-    
-    reviewList.innerHTML = '<p style="color: var(--text-gray); text-align: center;">Loading reviews...</p>';
-    reviewModal.style.display = 'block';
 
-    try {
-        let html = '';
-        if (isFirebaseAvailable && isFirebaseConfigured) {
-            const snapshot = await db.collection('products').doc(pid).collection('reviews').orderBy('timestamp', 'desc').get();
-            if (snapshot.empty) {
-                html = '<p style="color: var(--text-gray); text-align: center;">No reviews yet. Be the first to write one!</p>';
-            } else {
-                snapshot.forEach(doc => {
-                    const r = doc.data();
-                    const stars = '⭐'.repeat(r.rating);
-                    html += `
-                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border);">
-                            <div style="margin-bottom: 5px;">${stars}</div>
-                            <p style="color: var(--text-white); font-size: 0.9rem; margin-bottom: ${r.photoUrl ? '10px' : '0'};">${r.message}</p>
-                            ${r.photoUrl ? `<img src="${r.photoUrl}" style="max-width: 100px; border-radius: 5px; border: 1px solid var(--gold-primary); cursor: pointer;" onclick="window.open('${r.photoUrl}')">` : ''}
-                        </div>
-                    `;
-                });
-            }
-        } else {
-            // Local fallback
-            const localReviews = JSON.parse(localStorage.getItem(`reviews_${pid}`) || '[]');
-            if (localReviews.length === 0) {
-                html = '<p style="color: var(--text-gray); text-align: center;">No reviews yet. Be the first to write one!</p>';
-            } else {
-                localReviews.forEach(r => {
-                    const stars = '⭐'.repeat(r.rating);
-                    html += `
-                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border);">
-                            <div style="margin-bottom: 5px;">${stars}</div>
-                            <p style="color: var(--text-white); font-size: 0.9rem; margin-bottom: ${r.photoUrl ? '10px' : '0'};">${r.message}</p>
-                            ${r.photoUrl ? `<img src="${r.photoUrl}" style="max-width: 100px; border-radius: 5px; border: 1px solid var(--gold-primary); cursor: pointer;" onclick="window.open('${r.photoUrl}')">` : ''}
-                        </div>
-                    `;
-                });
-            }
-        }
-        reviewList.innerHTML = html;
-    } catch(err) {
-        reviewList.innerHTML = '<p style="color: red; text-align: center;">Failed to load reviews.</p>';
-    }
-};
-
-const closeReviewBtn = document.querySelector('.closeReview');
-if(closeReviewBtn) {
-    closeReviewBtn.onclick = () => document.getElementById('reviewModal').style.display = 'none';
-}
-
-const reviewForm = document.getElementById('reviewForm');
-if(reviewForm) {
-    reviewForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitReviewBtn');
-        const origText = btn.textContent;
-        btn.textContent = 'Submitting...';
-        btn.disabled = true;
-
-        try {
-            const pid = document.getElementById('reviewPid').value;
-            const rating = Number(document.getElementById('reviewRating').value);
-            const message = document.getElementById('reviewMessage').value;
-            const photoInput = document.getElementById('reviewPhoto');
-            
-            let photoUrl = '';
-            if (photoInput.files.length > 0) {
-                btn.textContent = 'Uploading Photo...';
-                photoUrl = await uploadToCloudinary(photoInput.files[0], (p) => {
-                    btn.textContent = `Photo: ${Math.round(p)}%`;
-                });
-            }
-
-            const reviewData = {
-                rating,
-                message,
-                photoUrl,
-                timestamp: isFirebaseAvailable ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString()
-            };
-
-            if (isFirebaseAvailable && isFirebaseConfigured) {
-                await db.collection('products').doc(pid).collection('reviews').add(reviewData);
-            } else {
-                const localReviews = JSON.parse(localStorage.getItem(`reviews_${pid}`) || '[]');
-                localReviews.unshift(reviewData);
-                localStorage.setItem(`reviews_${pid}`, JSON.stringify(localReviews));
-            }
-
-            showNotification('Thank you for your review!');
-            reviewForm.reset();
-            window.openReviewModal(pid); // Refresh list
-        } catch(err) {
-            console.error(err);
-            showNotification('Error submitting review.');
-        } finally {
-            btn.textContent = origText;
-            btn.disabled = false;
-        }
-    };
-}
 
 // --- Inquiries CRM System ---
 let inquiries = [];
@@ -2182,32 +2065,101 @@ window.deleteInquiry = async function(id) {
     checkFollowUps();
 };
 
+// --- Promo Codes Engine Logic ---
+async function loadPromoCodes() {
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            const snapshot = await db.collection('promocodes').orderBy('timestamp', 'desc').get();
+            promoCodes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } else {
+            promoCodes = JSON.parse(localStorage.getItem('promoCodes') || '[]');
+        }
+    } catch(err) {
+        console.warn("Error loading promo codes from Firebase, using local:", err);
+        promoCodes = JSON.parse(localStorage.getItem('promoCodes') || '[]');
+    }
+    if (isAdminLoggedIn) renderPromoCodes();
+}
+
+function renderPromoCodes() {
+    const listEl = document.getElementById('promoCodesList');
+    if (!listEl) return;
+
+    if (promoCodes.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--text-gray);">No promo codes created yet.</p>';
+        return;
+    }
+
+    listEl.innerHTML = promoCodes.map(promo => `
+        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong style="color: var(--gold-primary); font-size: 1.2rem; letter-spacing: 2px;">${promo.codeStr}</strong>
+                <span style="background: rgba(255,255,255,0.1); color: white; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">${promo.category.toUpperCase()}</span>
+                <div style="font-size: 0.85rem; color: white; margin-top: 4px;">
+                    Discount: <span style="color: #25D366; font-weight: bold;">${promo.type === 'percent' ? `${promo.value}% OFF` : `₹${promo.value} OFF`}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-gray); margin-top: 2px;">Expires: ${promo.expiryDate}</div>
+            </div>
+            <button onclick="deletePromoCode('${promo.id}')" style="background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;">Delete</button>
+        </div>
+    `).join('');
+}
+
+window.deletePromoCode = async function(id) {
+    if (!confirm("Remove this promo code?")) return;
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            await db.collection('promocodes').doc(id).delete();
+        }
+    } catch(err) { console.warn(err); }
+    promoCodes = promoCodes.filter(p => p.id !== id);
+    localStorage.setItem('promoCodes', JSON.stringify(promoCodes));
+    renderPromoCodes();
+    showNotification('Promo code deleted.');
+};
+
 // Setup Admin Tabs Logic inside a function so we can ensure elements exist
 function setupAdminTabs() {
     const tabUploadBtn = document.getElementById('tabUploadBtn');
     const tabInquiriesBtn = document.getElementById('tabInquiriesBtn');
+    const tabPromoBtn = document.getElementById('tabPromoBtn');
     const tabUpload = document.getElementById('tabUpload');
     const tabInquiries = document.getElementById('tabInquiries');
+    const tabPromo = document.getElementById('tabPromo');
 
-    if (tabUploadBtn && tabInquiriesBtn) {
+    const resetAdminTabs = () => {
+        if(tabUploadBtn) { tabUploadBtn.style.background = 'rgba(255,255,255,0.05)'; tabUploadBtn.style.color = 'var(--text-white)'; }
+        if(tabInquiriesBtn) { tabInquiriesBtn.style.background = 'rgba(255,255,255,0.05)'; tabInquiriesBtn.style.color = 'var(--text-white)'; }
+        if(tabPromoBtn) { tabPromoBtn.style.background = 'rgba(255,255,255,0.05)'; tabPromoBtn.style.color = 'var(--text-white)'; }
+        if(tabUpload) tabUpload.style.display = 'none';
+        if(tabInquiries) tabInquiries.style.display = 'none';
+        if(tabPromo) tabPromo.style.display = 'none';
+    };
+
+    if (tabUploadBtn) {
         tabUploadBtn.onclick = (e) => {
             e.preventDefault();
-            tabUploadBtn.style.background = 'var(--gold-gradient)';
-            tabUploadBtn.style.color = '#000';
-            tabInquiriesBtn.style.background = 'rgba(255,255,255,0.05)';
-            tabInquiriesBtn.style.color = 'var(--text-white)';
+            resetAdminTabs();
+            tabUploadBtn.style.background = 'var(--gold-gradient)'; tabUploadBtn.style.color = '#000';
             if(tabUpload) tabUpload.style.display = 'block';
-            if(tabInquiries) tabInquiries.style.display = 'none';
         };
+    }
+    if (tabInquiriesBtn) {
         tabInquiriesBtn.onclick = (e) => {
             e.preventDefault();
-            tabInquiriesBtn.style.background = 'var(--gold-gradient)';
-            tabInquiriesBtn.style.color = '#000';
-            tabUploadBtn.style.background = 'rgba(255,255,255,0.05)';
-            tabUploadBtn.style.color = 'var(--text-white)';
+            resetAdminTabs();
+            tabInquiriesBtn.style.background = 'var(--gold-gradient)'; tabInquiriesBtn.style.color = '#000';
             if(tabInquiries) tabInquiries.style.display = 'block';
-            if(tabUpload) tabUpload.style.display = 'none';
             loadInquiries();
+        };
+    }
+    if (tabPromoBtn) {
+        tabPromoBtn.onclick = (e) => {
+            e.preventDefault();
+            resetAdminTabs();
+            tabPromoBtn.style.background = 'var(--gold-gradient)'; tabPromoBtn.style.color = '#000';
+            if(tabPromo) tabPromo.style.display = 'block';
+            loadPromoCodes();
         };
     }
 
@@ -2260,24 +2212,176 @@ function setupAdminTabs() {
             btn.disabled = false;
         };
     }
+
+    // Promo Code Creation logic
+    const showAddPromoBtn = document.getElementById('showAddPromoBtn');
+    const createPromoForm = document.getElementById('createPromoForm');
+    if (showAddPromoBtn && createPromoForm) {
+        showAddPromoBtn.onclick = (e) => {
+            e.preventDefault();
+            createPromoForm.style.display = createPromoForm.style.display === 'none' ? 'block' : 'none';
+        };
+
+        createPromoForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = createPromoForm.querySelector('button[type="submit"]');
+            const origTxt = btn.textContent;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const codeStr = document.getElementById('promoCodeStr').value.trim().toUpperCase();
+            if (promoCodes.some(p => p.codeStr === codeStr)) {
+                showNotification('Code already exists!');
+                btn.textContent = origTxt; btn.disabled = false;
+                return;
+            }
+
+            const newPromo = {
+                id: Date.now().toString(),
+                codeStr: codeStr,
+                type: document.getElementById('promoType').value,
+                value: Number(document.getElementById('promoValue').value),
+                category: document.getElementById('promoCat').value,
+                expiryDate: document.getElementById('promoExpiry').value,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                if (isFirebaseAvailable && isFirebaseConfigured) {
+                    await db.collection('promocodes').doc(newPromo.id).set(newPromo);
+                }
+            } catch(err) { console.warn(err); }
+
+            promoCodes.unshift(newPromo);
+            localStorage.setItem('promoCodes', JSON.stringify(promoCodes));
+
+            createPromoForm.reset();
+            createPromoForm.style.display = 'none';
+            renderPromoCodes();
+            showNotification('Promo code created successfully!');
+
+            btn.textContent = origTxt;
+            btn.disabled = false;
+        };
+    }
+
+    // Customer Apply Promo Button Logic
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    if (applyPromoBtn) {
+        applyPromoBtn.onclick = () => {
+            const inputEl = document.getElementById('appliedPromoInput');
+            const msgEl = document.getElementById('promoMessage');
+            if (!inputEl || !msgEl) return;
+
+            const codeEntered = inputEl.value.trim().toUpperCase();
+            if (!codeEntered) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = '#ff4d4d';
+                msgEl.textContent = 'Please enter a promo code.';
+                return;
+            }
+
+            const promo = promoCodes.find(p => p.codeStr === codeEntered);
+            if (!promo) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = '#ff4d4d';
+                msgEl.textContent = 'Invalid promo code.';
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            if (promo.expiryDate && promo.expiryDate < today) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = '#ff4d4d';
+                msgEl.textContent = 'This promo code has expired.';
+                return;
+            }
+
+            const orderType = buyModal.getAttribute('data-order-type');
+            const pid = buyModal.getAttribute('data-current-pid');
+            let applicableSubtotal = 0;
+            let fullSubtotal = 0;
+
+            if (orderType === 'bag') {
+                cart.forEach(itemId => {
+                    const item = products.find(p => String(p.id) === String(itemId));
+                    if (item) {
+                        fullSubtotal += item.price;
+                        if (promo.category === 'all' || item.category === promo.category) {
+                            applicableSubtotal += item.price;
+                        }
+                    }
+                });
+            } else {
+                const item = products.find(p => String(p.id) === String(pid));
+                if (item) {
+                    fullSubtotal = item.price;
+                    if (promo.category === 'all' || item.category === promo.category) {
+                        applicableSubtotal = item.price;
+                    }
+                }
+            }
+
+            if (applicableSubtotal === 0) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = '#ff4d4d';
+                msgEl.textContent = `Code valid only for ${promo.category.toUpperCase()} items.`;
+                return;
+            }
+
+            let discountAmount = 0;
+            if (promo.type === 'percent') {
+                discountAmount = Math.round((applicableSubtotal * promo.value) / 100);
+            } else {
+                discountAmount = promo.value;
+            }
+
+            if (discountAmount > fullSubtotal) {
+                discountAmount = fullSubtotal;
+            }
+
+            const finalTotal = fullSubtotal - discountAmount;
+
+            appliedPromoObj = {
+                ...promo,
+                discountAmount,
+                finalTotal
+            };
+
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#25D366';
+            msgEl.textContent = 'Promo Code applied successfully!';
+
+            const summaryBox = document.getElementById('orderSummaryBox');
+            const summarySubtotal = document.getElementById('summarySubtotal');
+            const summaryDiscountAmount = document.getElementById('summaryDiscountAmount');
+            const summaryFinalTotal = document.getElementById('summaryFinalTotal');
+
+            if (summaryBox) summaryBox.style.display = 'block';
+            if (summarySubtotal) summarySubtotal.textContent = `₹${fullSubtotal.toLocaleString()}`;
+            if (summaryDiscountAmount) summaryDiscountAmount.textContent = `-₹${discountAmount.toLocaleString()}`;
+            if (summaryFinalTotal) summaryFinalTotal.textContent = `₹${finalTotal.toLocaleString()}`;
+
+            showNotification('Discount Applied!');
+        };
+    }
 }
 
 // Intercept Admin Login success to initialize CRM tabs and load data
-const originalLoginComplete = window.renderProducts; // We can trigger load on admin view display
-// Let's hook into admin button or just run setupAdminTabs on init
 setTimeout(() => {
     setupAdminTabs();
+    loadPromoCodes();
     if (isAdminLoggedIn) {
         loadInquiries();
     }
 }, 500);
 
 // Hook into existing adminBtn onclick to also setup/load inquiries if logged in
-const oldAdminBtnClick = document.getElementById('adminBtn')?.onclick;
 if (document.getElementById('adminBtn')) {
     document.getElementById('adminBtn').addEventListener('click', () => {
         setTimeout(() => {
             setupAdminTabs();
+            loadPromoCodes();
             if (isAdminLoggedIn) loadInquiries();
         }, 100);
     });
