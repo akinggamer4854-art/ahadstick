@@ -79,6 +79,7 @@ let currentZoomImages = [];
 let currentZoomIndex = 0;
 let promoCodes = [];
 let appliedPromoObj = null;
+let customCategories = [];
 
 const syncProducts = async () => {
     if (isFirebaseAvailable && isFirebaseConfigured) {
@@ -437,11 +438,24 @@ function updateAdminStats() {
         belt_wallet: 0
     };
 
+    customCategories.forEach(c => {
+        counts[c.id] = 0;
+    });
+
     products.forEach(p => {
         if (counts[p.category] !== undefined) {
             counts[p.category]++;
+        } else {
+            const cust = customCategories.find(c => c.id === p.category);
+            if (cust) {
+                counts[p.category] = (counts[p.category] || 0) + 1;
+            }
         }
     });
+
+    let customStatsHtml = customCategories.map(c => `
+        <div class="admin-stat-item" style="border-color: var(--gold-primary);"><span>${c.name.toUpperCase()}</span> <span>${counts[c.id] || 0}</span></div>
+    `).join('');
 
     container.innerHTML = `
         <h4>Upload Statistics</h4>
@@ -456,6 +470,7 @@ function updateAdminStats() {
             <div class="admin-stat-item"><span>CROCS (M/F)</span> <span>${counts.crocs}</span></div>
             <div class="admin-stat-item"><span>LADIES PURSE</span> <span>${counts.ladies_purse}</span></div>
             <div class="admin-stat-item"><span>BELT & WALLET</span> <span>${counts.belt_wallet}</span></div>
+            ${customStatsHtml}
             <div class="admin-stat-item total"><span>TOTAL PRODUCTS</span> <span>${counts.total}</span></div>
         </div>
     `;
@@ -2136,12 +2151,14 @@ function setupAdminTabs() {
     const tabInquiriesBtn = document.getElementById('tabInquiriesBtn');
     const tabPromoBtn = document.getElementById('tabPromoBtn');
     const tabAnalyticsBtn = document.getElementById('tabAnalyticsBtn');
+    const tabCategoriesBtn = document.getElementById('tabCategoriesBtn');
 
     const tabUpload = document.getElementById('tabUpload');
     const tabStock = document.getElementById('tabStock');
     const tabInquiries = document.getElementById('tabInquiries');
     const tabPromo = document.getElementById('tabPromo');
     const tabAnalytics = document.getElementById('tabAnalytics');
+    const tabCategories = document.getElementById('tabCategories');
 
     const resetAdminTabs = () => {
         if(tabUploadBtn) { tabUploadBtn.style.background = 'rgba(255,255,255,0.05)'; tabUploadBtn.style.color = 'var(--text-white)'; }
@@ -2149,12 +2166,14 @@ function setupAdminTabs() {
         if(tabInquiriesBtn) { tabInquiriesBtn.style.background = 'rgba(255,255,255,0.05)'; tabInquiriesBtn.style.color = 'var(--text-white)'; }
         if(tabPromoBtn) { tabPromoBtn.style.background = 'rgba(255,255,255,0.05)'; tabPromoBtn.style.color = 'var(--text-white)'; }
         if(tabAnalyticsBtn) { tabAnalyticsBtn.style.background = 'rgba(255,255,255,0.05)'; tabAnalyticsBtn.style.color = 'var(--text-white)'; }
+        if(tabCategoriesBtn) { tabCategoriesBtn.style.background = 'rgba(255,255,255,0.05)'; tabCategoriesBtn.style.color = 'var(--text-white)'; }
 
         if(tabUpload) tabUpload.style.display = 'none';
         if(tabStock) tabStock.style.display = 'none';
         if(tabInquiries) tabInquiries.style.display = 'none';
         if(tabPromo) tabPromo.style.display = 'none';
         if(tabAnalytics) tabAnalytics.style.display = 'none';
+        if(tabCategories) tabCategories.style.display = 'none';
     };
 
     if (tabUploadBtn) {
@@ -2199,6 +2218,15 @@ function setupAdminTabs() {
             tabAnalyticsBtn.style.background = 'var(--gold-gradient)'; tabAnalyticsBtn.style.color = '#000';
             if(tabAnalytics) tabAnalytics.style.display = 'block';
             loadRollingAnalytics();
+        };
+    }
+    if (tabCategoriesBtn) {
+        tabCategoriesBtn.onclick = (e) => {
+            e.preventDefault();
+            resetAdminTabs();
+            tabCategoriesBtn.style.background = 'var(--gold-gradient)'; tabCategoriesBtn.style.color = '#000';
+            if(tabCategories) tabCategories.style.display = 'block';
+            loadCustomCategories();
         };
     }
 
@@ -2699,6 +2727,170 @@ function scheduleMidnightRoll() {
     }, msUntilMidnight + 100); // 100ms safety padding to perfectly cross midnight boundary
 }
 
+// --- Feature 5: Dynamic Category Engine Functions ---
+let initialFooterHtml = null;
+function renderCategoriesUI() {
+    const sideContainer = document.getElementById('customSideCategoriesContainer');
+    if (sideContainer) {
+        sideContainer.innerHTML = customCategories.map(c => {
+            const act = currentCategory === c.id ? 'active' : '';
+            return `<button class="cat-btn ${act}" data-cat="${c.id}" onclick="setCategory('${c.id}')" style="text-align: left; width: 100%; border-radius: 10px; padding: 12px 20px;">${c.name.toUpperCase()}</button>`;
+        }).join('');
+    }
+
+    const footerList = document.getElementById('footerCollectionsList');
+    if (footerList) {
+        if (!initialFooterHtml) initialFooterHtml = footerList.innerHTML;
+        footerList.innerHTML = initialFooterHtml + customCategories.map(c => `
+            <li><a href="#" onclick="setCategory('${c.id}'); return false;">${c.name}</a></li>
+        `).join('');
+    }
+
+    // Update Form Dropdowns
+    const pCat = document.getElementById('pCat');
+    const promoCat = document.getElementById('promoCat');
+
+    if (pCat) {
+        pCat.querySelectorAll('.custom-opt').forEach(opt => opt.remove());
+        customCategories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.className = 'custom-opt';
+            opt.value = c.id;
+            opt.textContent = c.name.toUpperCase();
+            pCat.appendChild(opt);
+        });
+    }
+
+    if (promoCat) {
+        promoCat.querySelectorAll('.custom-opt').forEach(opt => opt.remove());
+        customCategories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.className = 'custom-opt';
+            opt.value = c.id;
+            opt.textContent = c.name.toUpperCase();
+            opt.style.color = 'black';
+            promoCat.appendChild(opt);
+        });
+    }
+
+    // Update Admin Custom Categories List
+    const adminList = document.getElementById('customCategoriesList');
+    if (adminList) {
+        if (customCategories.length === 0) {
+            adminList.innerHTML = '<p style="color: var(--text-gray); font-size: 0.85rem;">No custom categories active.</p>';
+        } else {
+            adminList.innerHTML = customCategories.map(c => `
+                <div style="background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: white; font-size: 0.95rem;">${c.name.toUpperCase()}</strong>
+                        <div style="color: var(--gold-primary); font-size: 0.75rem;">ID: ${c.id}</div>
+                    </div>
+                    <button type="button" onclick="deleteCustomCategory('${c.id}')" style="background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">Remove</button>
+                </div>
+            `).join('');
+        }
+    }
+
+    updateAdminStats();
+}
+
+let isCategoriesListening = false;
+async function loadCustomCategories() {
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            if (!isCategoriesListening) {
+                isCategoriesListening = true;
+                db.collection('categories').orderBy('timestamp', 'asc').onSnapshot(snapshot => {
+                    customCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    renderCategoriesUI();
+                }, err => {
+                    console.warn("Categories snapshot error:", err);
+                });
+            }
+        } else {
+            customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+            renderCategoriesUI();
+        }
+    } catch(err) {
+        console.warn("Error setting up custom categories listener:", err);
+        customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+        renderCategoriesUI();
+    }
+}
+
+function setupCategoryManager() {
+    const form = document.getElementById('createCategoryForm');
+    if (!form) return;
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const origTxt = btn.textContent;
+        btn.textContent = 'Creating Live...';
+        btn.disabled = true;
+
+        const name = document.getElementById('newCatName').value.trim();
+        let idStr = document.getElementById('newCatId').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+        if (!idStr || !name) {
+            showNotification('Please provide valid category details.');
+            btn.textContent = origTxt; btn.disabled = false;
+            return;
+        }
+
+        const existingIds = ['all', 'watches', 'shoes', 'goggles', 'menclothes', 'ladyfootwear', 'ladywatch', 'formals_loafers', 'crocs', 'ladies_purse', 'belt_wallet'];
+        if (existingIds.includes(idStr) || customCategories.some(c => c.id === idStr)) {
+            showNotification('Category ID already exists! Please use a unique ID.');
+            btn.textContent = origTxt; btn.disabled = false;
+            return;
+        }
+
+        const newCat = {
+            name: name,
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            if (isFirebaseAvailable && isFirebaseConfigured) {
+                await db.collection('categories').doc(idStr).set(newCat);
+            }
+        } catch(err) { console.warn(err); }
+
+        if (!customCategories.some(c => c.id === idStr)) {
+            customCategories.push({ id: idStr, ...newCat });
+            localStorage.setItem('customCategories', JSON.stringify(customCategories));
+        }
+
+        form.reset();
+        renderCategoriesUI();
+        showNotification('✨ Live Category broadcasted successfully!');
+
+        btn.textContent = origTxt;
+        btn.disabled = false;
+    };
+}
+
+window.deleteCustomCategory = async function(id) {
+    if (!confirm("Are you sure you want to remove this live category? Products uploaded under it will remain in database but won't be filtered directly.")) return;
+    
+    try {
+        if (isFirebaseAvailable && isFirebaseConfigured) {
+            await db.collection('categories').doc(id).delete();
+        }
+    } catch(err) { console.warn(err); }
+
+    customCategories = customCategories.filter(c => c.id !== id);
+    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+    
+    if (currentCategory === id) {
+        setCategory('all');
+    } else {
+        renderCategoriesUI();
+    }
+    showNotification('Category removed.');
+};
+
 // Intercept Admin Login success to initialize CRM tabs and load data
 setTimeout(() => {
     applyBannerConfig();
@@ -2706,6 +2898,8 @@ setTimeout(() => {
     scheduleMidnightRoll(); // initiate automatic midnight counter layout adjustments
     setupAdminTabs();
     loadPromoCodes();
+    loadCustomCategories();
+    setupCategoryManager();
     if (isAdminLoggedIn) {
         loadInquiries();
     }
@@ -2717,6 +2911,8 @@ if (document.getElementById('adminBtn')) {
         setTimeout(() => {
             setupAdminTabs();
             loadPromoCodes();
+            loadCustomCategories();
+            setupCategoryManager();
             if (isAdminLoggedIn) {
                 loadInquiries();
                 loadRollingAnalytics();

@@ -129,6 +129,7 @@
                 <button class="cat-btn" data-cat="crocs">CROCS & SANDALS (M/F)</button>
                 <button class="cat-btn" data-cat="ladies_purse">LADIES PURSE</button>
                 <button class="cat-btn" data-cat="belt_wallet">BELT & WALLET</button>
+                <div id="customSideCategoriesContainer" style="display: flex; flex-direction: column; gap: 15px; width: 100%;"></div>
                 <button id="sideWishlistBtn" class="cat-btn"
                     style="color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">❤️ MY WISHLIST</button>
             </div>
@@ -308,7 +309,7 @@
             <!-- Column 3: Quick Links -->
             <div class="footer-links">
                 <h4>Collections</h4>
-                <ul>
+                <ul id="footerCollectionsList">
                     <li><a href="#" onclick="setCategory('all'); return false;">All Collections</a></li>
                     <li><a href="#" onclick="setCategory('watches'); return false;">Luxury Watches</a></li>
                     <li><a href="#" onclick="setCategory('shoes'); return false;">Premium Shoes</a></li>
@@ -513,7 +514,7 @@
                 <form id="loginForm">
                     <div class="input-group full">
                         <label>Admin Email</label>
-                        <input type="email" id="adminEmail" placeholder="akinggamer4854@gmail.com" required>
+                        <input type="email" id="adminEmail" placeholder="abc@gmail.com" required>
                     </div>
                     <div class="input-group full">
                         <label>Password</label>
@@ -539,6 +540,7 @@
                     <button class="admin-tab" id="tabInquiriesBtn" style="flex: 1; min-width: 80px; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-white); font-weight: bold; cursor: pointer; position: relative; font-size: 0.75rem;">Inquiries <span id="inquiryBadge" style="position: absolute; top: -8px; right: -8px; background: #ff4d4d; color: white; border-radius: 50%; padding: 3px 8px; font-size: 0.75rem; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: none;">0</span></button>
                     <button class="admin-tab" id="tabPromoBtn" style="flex: 1; min-width: 80px; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-white); font-weight: bold; cursor: pointer; font-size: 0.75rem;">Promo</button>
                     <button class="admin-tab" id="tabAnalyticsBtn" style="flex: 1; min-width: 80px; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-white); font-weight: bold; cursor: pointer; font-size: 0.75rem;">Analytics</button>
+                    <button class="admin-tab" id="tabCategoriesBtn" style="flex: 1; min-width: 80px; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-white); font-weight: bold; cursor: pointer; font-size: 0.75rem;">Categories</button>
                 </div>
 
                 <!-- Product Upload Tab -->
@@ -782,6 +784,33 @@
                             <div style="font-size: 0.8rem; color: var(--gold-primary); margin-bottom: 5px; font-weight: bold;">PAST 7 DAYS PERFORMANCE</div>
                             <div id="analyticsWeeklyList" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-size: 0.85rem;"></div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Categories Manager Tab -->
+                <div id="tabCategories" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: var(--gold-primary);">Dynamic Category Engine</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-gray);">Live on Side Menu & Form</span>
+                    </div>
+
+                    <!-- Create Category Form -->
+                    <form id="createCategoryForm" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--glass-border);">
+                        <div class="input-group full">
+                            <label>Category Display Name</label>
+                            <input type="text" id="newCatName" placeholder="e.g. AIRPODS & GADGETS" required>
+                        </div>
+                        <div class="input-group full">
+                            <label>Category Key / ID (No spaces)</label>
+                            <input type="text" id="newCatId" placeholder="e.g. airpods" style="text-transform: lowercase;" required>
+                        </div>
+                        <button type="submit" class="confirm-btn" style="padding: 10px; margin-top: 10px;">Create & Go Live</button>
+                    </form>
+
+                    <!-- Active Custom Categories List -->
+                    <div>
+                        <h4 style="color: var(--gold-primary); border-bottom: 1px solid var(--gold-primary); padding-bottom: 5px; margin-bottom: 10px;">CUSTOM LIVE CATEGORIES</h4>
+                        <div id="customCategoriesList" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px;"></div>
                     </div>
                 </div>
             </div>
